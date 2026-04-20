@@ -1,0 +1,16 @@
+{
+  "name": "noobieteam",
+  "version": "1.0.0",
+  "description": "Noobieteam project",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongodb-memory-server": "^11.0.1",
+    "mongoose": "^9.4.1",
+    "react-player": "^2.16.0"
+  }
+}

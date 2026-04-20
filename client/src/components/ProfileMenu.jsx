@@ -1,0 +1,61 @@
+window.ProfileMenu = ({ user, onLogout, onThemeChange, currentTheme, onUpdateUser }) => {
+    const [open, setOpen] = React.useState(false);
+    const [showChangePass, setShowChangePass] = React.useState(false);
+    const [newPass, setNewPass] = React.useState("");
+    const { showToast } = window.useToasts();
+    const uMail = user?.email || 'User';
+    const uLabel = uMail.charAt(0).toUpperCase();
+    const avatarInputRef = React.useRef(null);
+
+    const isDarkHeader = ['dark', 'darkblue', 'green', 'ocean'].includes(currentTheme);
+
+    const handleAvatarUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (re) => {
+                const updatedUser = { ...user, avatar: re.target.result };
+                onUpdateUser(updatedUser);
+                const users = window.safeParse('nt_users', []);
+                localStorage.setItem('nt_users', JSON.stringify(users.map(u => u.email === user.email ? updatedUser : u)));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    return (
+        <div className="relative">
+            <window.Avatar label={uLabel} src={user?.avatar} active story onClick={() => setOpen(!open)} />
+            {open && (
+                <>
+                    <div className="fixed inset-0 z-[140]" onClick={() => setOpen(false)}></div>
+                    <div className="absolute right-0 top-full mt-3 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-[150] animate-pop text-black">
+                        <div className="px-3 py-2 border-b border-gray-50 mb-1.5 flex flex-col items-center">
+                            <window.Avatar label={uLabel} src={user?.avatar} size="lg" onClick={() => avatarInputRef.current.click()} />
+                            <input type="file" ref={avatarInputRef} className="hidden" onChange={handleAvatarUpload} accept="image/*" />
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">Authorized User</p>
+                            <p className="text-sm font-bold truncate max-w-full">{uMail}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <button onClick={() => { setOpen(false); setShowChangePass(true); }} className="w-full text-left px-3 py-2.5 hover:bg-gray-50 rounded-xl text-sm font-medium flex items-center gap-2.5"><window.Icon name="key" size={14} /> Update Password</button>
+                            <div className="px-3 py-2"><p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Header Theme</p><div className="grid grid-cols-5 gap-1.5">{window.THEMES.map(t => (<button key={t.id} onClick={() => onThemeChange(t.id)} className={`w-full aspect-square rounded-md border-2 transition ${t.class.split(' ')[0]} ${currentTheme === t.id ? 'border-blue-500 scale-105' : 'border-transparent'}`} title={t.name}></button>))}</div></div>
+                            <button onClick={onLogout} className="w-full text-left px-3 py-2.5 hover:bg-red-50 text-red-500 rounded-xl text-sm font-bold flex items-center gap-2.5"><window.Icon name="log-out" size={14} /> Log Out</button>
+                        </div>
+                    </div>
+                </>
+            )}
+            <window.GlobalModal isOpen={showChangePass} onClose={() => setShowChangePass(false)} title="Security Update" footer={<button onClick={() => {
+                if (newPass.length < 4) return showToast("Password too short");
+                const users = window.safeParse('nt_users', []);
+                // Ensure password string is explicitly set and cleanly formatted (no encryption at rest to prevent double-hashing login failures, as prototype DB is localStorage)
+                // If real backend: send to /api/update-password and hash with bcrypt
+                const updatedUser = { ...user, password: newPass };
+                localStorage.setItem('nt_users', JSON.stringify(users.map(u => u.email === user.email ? updatedUser : u)));
+                onUpdateUser(updatedUser);
+                setShowChangePass(false);
+                setNewPass('');
+                showToast("Password updated successfully ✨");
+            }} className="bg-black text-white px-5 py-2 rounded-full text-[10px] font-bold">Save Key</button>}><p className="mb-3">Enter your new secure access key below.</p><input className="w-full p-3 bg-gray-50 rounded-xl border border-gray-100 outline-none text-black text-xs" type="password" placeholder="New Password" value={newPass} onChange={e => setNewPass(e.target.value)} /></window.GlobalModal>
+        </div>
+    );
+};

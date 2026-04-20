@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head><title>Test</title></head>
+<body>
+<script src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+<script>
+    window.require = function(n) {
+        if (n === 'react') return window.React;
+        if (n === 'react-dom') return window.ReactDOM;
+        return undefined;
+    };
+</script>
+<script type="module">
+    try {
+        const modReact = await import('https://cdn.jsdelivr.net/npm/@tiptap/react@2.2.4/+esm');
+        console.log("Keys in modReact:", Object.keys(modReact));
+        
+        const getExport = (m, name) => {
+            if (m[name]) return m[name];
+            if (m.default && m.default[name]) return m.default[name];
+            const key = Object.keys(m).find(k => k.toLowerCase() === name.toLowerCase());
+            if (key) return m[key];
+            if (m.default) {
+                const dKey = Object.keys(m.default).find(k => k.toLowerCase() === name.toLowerCase());
+                if (dKey) return m.default[dKey];
+            }
+            return null;
+        };
+
+        const useEditor = getExport(modReact, 'useEditor');
+        console.log("useEditor type:", typeof useEditor);
+        if (typeof useEditor === 'object') {
+            console.log("useEditor keys:", Object.keys(useEditor));
+        }
+
+        document.body.innerHTML = `<h1>Success</h1><p>useEditor type: ${typeof useEditor}</p><p>keys: ${typeof useEditor === 'object' ? Object.keys(useEditor).join(', ') : ''}</p>`;
+    } catch(e) {
+        console.error(e);
+        document.body.innerHTML = `<h1>Error</h1><pre>${e.stack}</pre>`;
+    }
+</script>
+</body>
+</html>

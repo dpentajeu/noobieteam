@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noobieteam | Next Gen Productivity Platform, Kanban application for teams managing all tasks, credentials and APIs</title>
+    <meta name="description" content="Noobieteam is a Next Gen Productivity Platform and Kanban application for teams managing all tasks, credentials and APIs seamlessly in one unified workspace." />
+    <meta property="og:title" content="Noobieteam | Next Gen Productivity Platform" />
+    <meta property="og:description" content="A powerful Kanban application for teams managing all tasks, credentials and APIs securely." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://noobieteam.com/og-image.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Noobieteam | Next Gen Productivity Platform" />
+    <meta name="twitter:description" content="Kanban application for teams managing all tasks, credentials and APIs." />
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <script>
+        // Critical shim for Babel-standalone and UMD libraries
+        window.React = React;
+        window.ReactDOM = ReactDOM;
+        window.require = function(name) {
+            if (name === 'react') return window.React;
+            if (name === 'react-dom') return window.ReactDOM;
+            if (name === 'react-dom/client') return window.ReactDOM;
+            return undefined;
+        };
+    </script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@0.477.0/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/react-beautiful-dnd@13.1.1/dist/react-beautiful-dnd.js"></script>
+
+    <!-- Quill WYSIWYG (Synchronous & Stable) -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="https://unpkg.com/react-player@2.16.0/dist/ReactPlayer.js"></script>
+    <script>
+      window.ReactPlayer = window.ReactPlayer || window.reactPlayer;
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #FAFAFA; color: #262626; }
+        .insta-shadow { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .story-ring { padding: 2px; border: 2px solid #DE005E; }
+        .glass-blur { backdrop-filter: blur(20px); background: rgba(255, 255, 255, 0.9); }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+        .animate-pop { animation: pop 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        .animate-slide-in { animation: slideIn 0.4s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pop { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes flyUpFade {
+            0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+            10% { opacity: 1; }
+            100% { transform: translateY(-500px) translateX(var(--sway)) scale(1.5); opacity: 0; }
+        }
+        
+        .animate-fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.17, 0.67, 0.83, 0.67) forwards; }
+        .animate-fly-up-fade { animation: flyUpFade 2s ease-out forwards; }
+        
+        .ql-container.ql-snow { border: none !important; font-family: 'Inter', sans-serif; font-size: 13px; }
+        .ql-toolbar.ql-snow { border: none !important; border-bottom: 1px solid #f0f0f0 !important; }
+        .editor-wrapper { border: 1px solid #f0f0f0; border-radius: 12px; background: #fff; overflow: hidden; }
+
+        .theme-default { background: #FFFFFF; color: #262626; border-bottom: 1px solid #f0f0f0; }
+        .theme-dark { background: #1A1A1A; color: #FFFFFF; border-bottom: 1px solid #333; }
+        .theme-dark-blue { background: #1E3A8A; color: #FFFFFF; border-bottom: 1px solid #1E40AF; }
+        .theme-green { background: #065F46; color: #FFFFFF; border-bottom: 1px solid #064E3B; }
+        .theme-ocean-blue { background: #0369A1; color: #FFFFFF; border-bottom: 1px solid #075985; }
+
+        .jukebox-floating { position: fixed; bottom: 20px; right: 20px; z-index: 1000; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .jukebox-minimized { width: 56px; height: 56px; border-radius: 28px; overflow: hidden; }
+        .jukebox-maximized { width: 320px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
+        
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 5000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+        .toast-item { pointer-events: auto; min-width: 250px; }
+
+        /* AI Assistant Styles */
+        .ai-floating { position: fixed; z-index: 2000; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .ai-floating-default { right: 20px; bottom: 25%; }
+        .ai-floating-shifted { right: 20px; bottom: 45%; } /* Shift up when media player is maximized */
+        
+        .ai-minimized { width: 56px; height: 56px; border-radius: 28px; overflow: hidden; }
+        .ai-maximized { width: 350px; height: 500px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+        .ai-message { max-width: 85%; padding: 10px 14px; border-radius: 18px; font-size: 12px; line-height: 1.5; margin-bottom: 8px; }
+        .ai-msg-user { align-self: flex-end; background: #000; color: #fff; border-bottom-right-radius: 4px; }
+        .ai-msg-bot { align-self: flex-start; background: #f3f4f6; color: #1f2937; border-bottom-left-radius: 4px; }
+    </style>
+
+<style>
+.typing-effect {
+    display: inline-block;
+    border-right: 2px solid white;
+    animation: typing 2s steps(40, end), blink-caret .75s step-end infinite;
+}
+@keyframes typing {
+    from { max-width: 0 }
+    to { max-width: 100% }
+}
+@keyframes blink-caret {
+    from, to { border-color: transparent }
+    50% { border-color: white; }
+}
+</style>
+
+
+    <meta name="description" content="Next Gen Productivity Platform, Kanban application for teams managing all tasks, credentials and APIs.">
+    <meta name="keywords" content="Kanban, productivity, tasks, credentials, APIs, open source, workspace, teamwork">
+    <meta property="og:title" content="Noobieteam | Next Gen Productivity Platform">
+    <meta property="og:description" content="Kanban application for teams managing all tasks, credentials and APIs.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Noobieteam | Next Gen Productivity Platform">
+    <meta name="twitter:description" content="Kanban application for teams managing all tasks, credentials and APIs.">
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- 1. Utilities and Contexts (MUST LOAD FIRST) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script type="text/babel" src="src/utils/helpers.js"></script>
+    <script type="text/babel" src="src/context/AppContext.jsx"></script>
+
+    <!-- 2. Global UI Components -->
+    <script type="text/babel" src="src/components/GlobalModal.jsx"></script>
+    <script type="text/babel" src="src/components/Toast.jsx"></script>
+    <script type="text/babel" src="src/components/FloatingJukebox.jsx"></script>
+
+    <!-- 3. Feature Components -->
+    <script type="text/babel" src="src/components/VaultTab.jsx"></script>
+    <script type="text/babel" src="src/components/DocTab.jsx?v=1776526577"></script>
+    <script type="text/babel" src="src/components/CardModal.jsx"></script>
+    <script type="text/babel" src="src/components/ProfileMenu.jsx"></script>
+    <script type="text/babel" src="src/components/WorkspaceHub.jsx"></script>
+    <script type="text/babel" src="src/components/WorkspaceView.jsx"></script>
+
+    <!-- 4. Main App Entry -->
+    <script type="text/babel" src="src/App.jsx"></script>
+</body>
+</html>

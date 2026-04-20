@@ -1,0 +1,11 @@
+--- /root/workspace/mas-projects/noobieteam/client/src/components/DocTab.jsx
++++ /root/workspace/mas-projects/noobieteam/client/src/components/DocTab.jsx
+@@ -37,7 +37,7 @@
+             const StarterKitExport = getExport(modStarterKit, 'StarterKit') || modStarterKit.default;
+             
+             if (typeof useEditorExport !== 'function') {
+-                throw new Error("useEditor is not a function. Detected type: " + typeof useEditorExport + ". Keys: " + Object.keys(useEditorExport || {}).join(", "));
++                throw new Error("useEditor is not a function. Detected type: " + typeof useEditorExport + ". Keys: " + Object.keys(useEditorExport || {}).join(', '));
+             }
+             if (!EditorContentExport) throw new Error("EditorContent missing. Keys: " + Object.keys(modReact).join(', '));
+             if (!StarterKitExport) throw new Error("StarterKit missing. Keys: " + Object.keys(modStarterKit).join(', '));
