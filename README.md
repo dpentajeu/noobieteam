@@ -1,7 +1,5 @@
 # Noobieteam: The Next Gen Productivity Platform
 
-![Noobieteam Header](https://via.placeholder.com/1200x400?text=Noobieteam+Next+Gen+Productivity+Platform)
-
 **Noobieteam** is a powerful, open-source Next Gen Productivity Platform designed for modern teams. It is an all-in-one Kanban application that seamlessly manages tasks, securely stores credentials, builds technical documentation, and integrates AI assistance—all within a single, highly collaborative workspace.
 
 Forget jumping between Jira for tasks, 1Password for secrets, GitBook for docs, and Spotify for focus. Noobieteam brings it all together with an "Instagram-style" minimalist UI.
