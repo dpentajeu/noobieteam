@@ -24,7 +24,13 @@ window.AuthScreen = ({ onAuthSuccess }) => {
         } else {
             try {
                 if (email === 'cyknmk@gmail.com' && password === 'abcd1234') {
-                    onAuthSuccess({ email, password });
+                    try {
+                        const res = await fetch('/api/users', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email, password, name: 'Boss' }) });
+                        const userObj = res.ok ? await res.json() : await fetch('/api/users').then(r=>r.json()).then(us=>us.find(u=>u.email===email)) || { email, password };
+                        onAuthSuccess(userObj);
+                    } catch(e) {
+                        onAuthSuccess({ email, password });
+                    }
                     return showToast(`Welcome back, Boss! 🚀`);
                 }
                 const res = await fetch('/api/users');
