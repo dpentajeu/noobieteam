@@ -125,7 +125,9 @@ window.DocTab = ({ workspaceId, user }) => {
     const { showConfirm, showPrompt } = window.useModals();
     const { showToast } = window.useToasts();
     const [docs, setDocs] = React.useState([]);
+    const [folders, setFolders] = React.useState([]);
     const [selectedDocId, setSelectedDocId] = React.useState(null);
+    const [expandedFolders, setExpandedFolders] = React.useState({});
     const [loading, setLoading] = React.useState(true);
     const [isDocEditing, setIsDocEditing] = React.useState(false);
 
@@ -138,14 +140,48 @@ window.DocTab = ({ workspaceId, user }) => {
             })
             .then(d => { 
                 setDocs(Array.isArray(d) ? d : []); 
-                setLoading(false); 
             })
             .catch(err => {
                 console.error("Docs load error:", err);
                 setDocs([]);
-                setLoading(false);
             });
+            
+        fetch(`/api/workspaces/${workspaceId}/folders`)
+            .then(r => r.json())
+            .then(f => setFolders(Array.isArray(f) ? f : []))
+            .catch(console.error)
+            .finally(() => setLoading(false));
     }, [workspaceId]);
+
+    
+    const addFolder = () => {
+        showPrompt('New Folder', 'Enter folder name:', async (name) => {
+            if (!name) return;
+            const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            const res = await fetch(`/api/workspaces/${workspaceId}/folders`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, slug }) });
+            const saved = await res.json();
+            setFolders(prev => [...prev, { ...saved, id: saved._id || saved.id }]);
+            setExpandedFolders(prev => ({ ...prev, [saved._id || saved.id]: true }));
+            showToast("Folder created.");
+        });
+    };
+
+    const deleteFolder = async (id) => {
+        showConfirm("Destroy Folder", "PERMANENTLY erase this folder? Documents inside will be moved to root.", async () => {
+            await fetch(`/api/folders/${id}`, { method: 'DELETE' });
+            setFolders(prev => prev.filter(f => (f.id !== id && f._id !== id)));
+            setDocs(prev => prev.map(d => d.folderId === id ? { ...d, folderId: null } : d));
+            showToast("Folder destroyed.");
+        });
+    };
+
+    const moveToFolder = async (docId, folderId) => {
+        setDocs(prev => prev.map(d => (d.id === docId || d._id === docId) ? { ...d, folderId } : d));
+        await fetch(`/api/docs/${docId}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ folderId }) });
+        showToast("Document moved.");
+    };
+
+    const toggleFolder = (id) => setExpandedFolders(prev => ({ ...prev, [id]: !prev[id] }));
 
     const addDoc = async (type) => {
         showPrompt(`New ${type === 'API' ? 'Endpoint' : 'Document'}`, 'Enter title:', async (title) => {
@@ -187,12 +223,55 @@ window.DocTab = ({ workspaceId, user }) => {
                 <div className="p-6 border-b border-gray-50 flex justify-between items-center">
                     <h2 className="text-xl font-black tracking-tight">Docs & API</h2>
                     <div className="flex gap-2">
+                        <button onClick={addFolder} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition text-purple-500" title="New Folder"><window.Icon name="folder-plus" size={16} /></button>
                         <button onClick={() => addDoc('TEXT')} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition text-blue-500" title="New Document"><window.Icon name="file-text" size={16} /></button>
                         <button onClick={() => addDoc('API')} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition text-emerald-500" title="New API Endpoint"><window.Icon name="zap" size={16} /></button>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-1">
-                    {docs.map(doc => {
+                    {folders.map(folder => {
+                        const folderId = folder.id || folder._id;
+                        const isExpanded = expandedFolders[folderId];
+                        const folderDocs = docs.filter(d => d.folderId === folderId);
+                        return (
+                            <div key={folderId} className="mb-2">
+                                <div className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 cursor-pointer group" onClick={() => toggleFolder(folderId)}>
+                                    <div className="flex items-center gap-2">
+                                        <window.Icon name={isExpanded ? "folder-open" : "folder"} size={16} className="text-gray-400" />
+                                        <span className="text-xs font-black text-gray-700">{folder.name}</span>
+                                    </div>
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                        <button onClick={(e) => { e.stopPropagation(); window.open(`/docs/${workspaceId}/${folder.slug || folderId}`, '_blank'); }} className="p-1 text-gray-400 hover:text-blue-500" title="Open Dynamic Docs Page"><window.Icon name="external-link" size={12} /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); deleteFolder(folderId); }} className="p-1 text-gray-400 hover:text-red-500" title="Delete Folder"><window.Icon name="trash" size={12} /></button>
+                                    </div>
+                                </div>
+                                {isExpanded && (
+                                    <div className="pl-6 mt-1 space-y-1">
+                                        {folderDocs.map(doc => {
+                                            const docId = doc.id || doc._id;
+                                                                                        return (
+                                                <div key={docId} onClick={() => setSelectedDocId(docId)} className={`group flex items-center justify-between p-2 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50 text-gray-600'}`}>
+                                                    <div className="flex items-center gap-2 truncate">
+                                                        <window.Icon name={doc.type === 'API' ? "zap" : "file-text"} size={14} className={selectedDocId === docId ? 'text-blue-500' : 'text-gray-400'} />
+                                                        <span className="text-xs font-bold truncate">{doc.title || 'Untitled'}</span>
+                                                    </div>
+                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                                        <button onClick={(e) => { e.stopPropagation(); moveToFolder(docId, null); }} className="p-1 text-gray-400 hover:text-gray-600" title="Move to Root"><window.Icon name="log-out" size={12} /></button>
+                                                        <button onClick={(e) => { e.stopPropagation(); deleteDoc(docId); }} className="p-1 text-gray-400 hover:text-red-500" title="Delete Document"><window.Icon name="trash" size={12} /></button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {folderDocs.length === 0 && <div className="p-2 text-[10px] text-gray-400 italic">Empty</div>}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 px-2">Root Documents</p>
+                    {docs.filter(d => !d.folderId).map(doc => {
                         const docId = doc.id || doc._id;
                         return (
                         <div key={docId} onClick={() => setSelectedDocId(docId)} className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-blue-50 border border-blue-100 text-blue-600 shadow-sm' : 'hover:bg-gray-50 border border-transparent'}`}>
@@ -211,6 +290,7 @@ window.DocTab = ({ workspaceId, user }) => {
                     {docs.length === 0 && <p className="text-xs text-gray-400 text-center mt-10 font-medium italic">No documentation found. Create one to begin.</p>}
                 </div>
             </div>
+            </div>
 
             {/* Content Area */}
             <div className="flex-1 flex flex-col bg-white">
@@ -223,9 +303,19 @@ window.DocTab = ({ workspaceId, user }) => {
                                 value={activeDoc.title}
                                 onChange={e => updateDoc(activeDoc.id || activeDoc._id, { title: e.target.value })}
                             />
+                            
                             <div className="flex items-center gap-4">
+                                <select 
+                                    className="text-xs bg-gray-50 border border-gray-200 rounded-lg px-3 py-1 font-bold text-gray-600 outline-none"
+                                    value={activeDoc.folderId || ''}
+                                    onChange={e => moveToFolder(activeDoc.id || activeDoc._id, e.target.value || null)}
+                                >
+                                    <option value="">No Folder (Root)</option>
+                                    {folders.map(f => <option key={f.id || f._id} value={f.id || f._id}>{f.name}</option>)}
+                                </select>
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{activeDoc.type} Spec</span>
                             </div>
+
                         </div>
                         
                         {/* Document Types */}
