@@ -1,6 +1,7 @@
 window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdateUser }) => {
             const { showPrompt, showConfirm } = window.useModals();
             const { showToast } = window.useToasts();
+    const { t } = window.useTranslation();
             const [workspaces, setWorkspaces] = React.useState([]);
             const [loading, setLoading] = React.useState(true);
             const [pinPrompt, setPinPrompt] = React.useState({ isOpen: false, pin: '', confirm: '' });
@@ -124,7 +125,7 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
             )}
                     <nav className={`h-16 px-6 lg:px-12 flex items-center justify-between transition-colors duration-500 shadow-sm ${headerClass}`}>
                         <div className="flex items-center gap-8">
-                            <h1 className={`text-xl font-black italic tracking-tighter ${isDarkHeader ? 'text-white' : 'text-black'}`}>Noobieteam</h1>
+                            <h1 className={`text-xl font-black italic tracking-tighter ${isDarkHeader ? 'text-white' : 'text-black'}`}>{t('app_name')}</h1>
                             {isAdmin && (
                                 <button onClick={() => setShowUserManagement(true)} className={`text-[10px] font-black uppercase tracking-widest transition hover:opacity-70 flex items-center gap-2 ${isDarkHeader ? 'text-white/80' : 'text-gray-500'}`}>
                                     <window.Icon name="users" size={14} /> User Management
@@ -137,7 +138,7 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
                     <div className="max-w-5xl mx-auto p-4 md:p-10 flex-1">
                         <header className="mb-8 md:mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                             <div>
-                                <h2 className="text-3xl md:text-5xl font-black tracking-tighter">{viewArchived ? 'Archive' : 'Workspaces'}</h2>
+                                <h2 className="text-3xl md:text-5xl font-black tracking-tighter">{viewArchived ? t('labels.secured_archive') || 'Archive' : t('labels.workspace') + 's'}</h2>
                                 <p className="text-gray-400 mt-2 font-bold uppercase tracking-[0.2em] text-[10px]">Project Command Hub</p>
                             </div>
                             <div className="flex gap-4">

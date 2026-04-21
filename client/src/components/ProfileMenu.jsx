@@ -3,6 +3,17 @@ window.ProfileMenu = ({ user, onLogout, onThemeChange, currentTheme, onUpdateUse
     const [showChangePass, setShowChangePass] = React.useState(false);
     const [newPass, setNewPass] = React.useState("");
     const { showToast } = window.useToasts();
+    const { lang, setLang, t } = window.useTranslation();
+    
+    const LANGS = [
+        { id: 'en', name: 'English' },
+        { id: 'id', name: 'Bahasa Indonesia' },
+        { id: 'ja', name: '日本語' },
+        { id: 'ms', name: 'Bahasa Melayu' },
+        { id: 'ru', name: 'Русский' },
+        { id: 'zh-CN', name: '简体中文' },
+        { id: 'zh-TW', name: '繁體中文' }
+    ];
     const uMail = user?.email || 'User';
     const uLabel = uMail.charAt(0).toUpperCase();
     const avatarInputRef = React.useRef(null);
@@ -33,13 +44,14 @@ window.ProfileMenu = ({ user, onLogout, onThemeChange, currentTheme, onUpdateUse
                         <div className="px-3 py-2 border-b border-gray-50 mb-1.5 flex flex-col items-center">
                             <window.Avatar label={uLabel} src={user?.avatar} size="lg" onClick={() => avatarInputRef.current.click()} />
                             <input type="file" ref={avatarInputRef} className="hidden" onChange={handleAvatarUpload} accept="image/*" />
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">Authorized User</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">{t('actions.logout') ? 'Authorized User' : 'Authorized User'}</p>
                             <p className="text-sm font-bold truncate max-w-full">{uMail}</p>
                         </div>
                         <div className="space-y-1">
-                            <button onClick={() => { setOpen(false); setShowChangePass(true); }} className="w-full text-left px-3 py-2.5 hover:bg-gray-50 rounded-xl text-sm font-medium flex items-center gap-2.5"><window.Icon name="key" size={14} /> Update Password</button>
-                            <div className="px-3 py-2"><p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Header Theme</p><div className="grid grid-cols-5 gap-1.5">{window.THEMES.map(t => (<button key={t.id} onClick={() => onThemeChange(t.id)} className={`w-full aspect-square rounded-md border-2 transition ${t.class.split(' ')[0]} ${currentTheme === t.id ? 'border-blue-500 scale-105' : 'border-transparent'}`} title={t.name}></button>))}</div></div>
-                            <button onClick={onLogout} className="w-full text-left px-3 py-2.5 hover:bg-red-50 text-red-500 rounded-xl text-sm font-bold flex items-center gap-2.5"><window.Icon name="log-out" size={14} /> Log Out</button>
+                            <button onClick={() => { setOpen(false); setShowChangePass(true); }} className="w-full text-left px-3 py-2.5 hover:bg-gray-50 rounded-xl text-sm font-medium flex items-center gap-2.5"><window.Icon name="key" size={14} /> {t('actions.update_password')}</button>
+                            <div className="px-3 py-2"><p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Language / 语言</p><select value={lang} onChange={e => { setLang(e.target.value); setOpen(false); }} className="w-full bg-gray-50 border border-gray-100 rounded-lg p-2 text-xs font-bold outline-none cursor-pointer">{LANGS.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}</select></div>
+                            <div className="px-3 py-2"><p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Header Theme</p><div className="grid grid-cols-5 gap-1.5">{window.THEMES.map(th => (<button key={th.id} onClick={() => onThemeChange(th.id)} className={`w-full aspect-square rounded-md border-2 transition ${th.class.split(' ')[0]} ${currentTheme === th.id ? 'border-blue-500 scale-105' : 'border-transparent'}`} title={th.name}></button>))}</div></div>
+                            <button onClick={onLogout} className="w-full text-left px-3 py-2.5 hover:bg-red-50 text-red-500 rounded-xl text-sm font-bold flex items-center gap-2.5"><window.Icon name="log-out" size={14} /> {t('actions.logout')}</button>
                         </div>
                     </div>
                 </>

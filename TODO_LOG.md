@@ -76,3 +76,7 @@
   2. Designed a glassmorphism dropdown listing the 7 required languages (English, Simplified/Traditional Chinese, Japanese, Indonesian, Malay, Russian) using native script and clean flag icons.
   3. Mandated instant UI translation upon selection without requiring a full page reload.
 - **Outcome:** The UI blueprints for the language selector are complete. Ready for the Programmer to wire the dropdown to the Data Analyst's JSON translation dictionaries.
+
+- **Date:** 2026-04-21
+  **Action:** Implement frontend i18n support
+  **Outcome:** Added `TranslationContext.Provider`, built dynamic language selector inside `ProfileMenu.jsx`, integrated translations for standard keys (`actions`, `labels`, `tabs`), and mapped JSON files from `client/src/locales/`.

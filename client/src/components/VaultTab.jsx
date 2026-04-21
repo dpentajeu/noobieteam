@@ -168,7 +168,7 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
 
         <div className="p-8 max-w-4xl mx-auto animate-fade-in pb-32">
             <header className="flex justify-between items-start mb-12">
-                <div><h2 className="text-4xl font-black mb-2 tracking-tighter">Project Vault</h2><p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">Encrypted Storage Center</p></div>
+                <div><h2 className="text-4xl font-black mb-2 tracking-tighter">Project Vault</h2><p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">{t('labels.encrypted_storage_center')}</p></div>
                 <button onClick={() => setIsAdding(true)} className="relative p-4 bg-black text-white rounded-full hover:scale-110 active:scale-90 transition shadow-xl ml-8"><window.Icon name="key-round" size={24} /><div className="absolute bottom-2 right-2 bg-blue-500 rounded-full w-4 h-4 flex items-center justify-center border-2 border-black"><window.Icon name="plus" size={8} className="text-white" /></div></button>
             </header>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -178,7 +178,7 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
                     <div key={secretId} className="p-6 bg-white border border-gray-100 rounded-[2rem] flex justify-between items-center shadow-sm hover:border-blue-200 transition group">
                         <div><p className="font-black text-lg tracking-tight">{s.service}</p><p className="text-[8px] text-gray-400 uppercase tracking-[0.2em] font-black mt-2">Secured Archive</p></div>
                         <div className="flex gap-3">
-                            <button onClick={() => handleReveal(secretId)} className="px-5 py-2 bg-blue-50 text-blue-500 rounded-full font-black text-[9px] uppercase tracking-widest hover:bg-blue-500 hover:text-white transition shadow-sm">Reveal</button>
+                            <button onClick={() => handleReveal(secretId)} className="px-5 py-2 bg-blue-50 text-blue-500 rounded-full font-black text-[9px] uppercase tracking-widest hover:bg-blue-500 hover:text-white transition shadow-sm">{t('actions.reveal')}</button>
                             <button onClick={() => showConfirm('Destroy Payload', `Delete ${s.service}?`, () => deleteSecret(secretId))} className="p-2 text-gray-200 hover:text-red-500 transition"><window.Icon name="trash-2" size={16}/></button>
                         </div>
                     </div>
@@ -214,7 +214,7 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
             </window.GlobalModal>
 
 
-            <window.GlobalModal isOpen={!!revealData} onClose={() => setRevealData(null)} title="Secure Access Granted" footer={<button onClick={() => setRevealData(null)} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl">Close</button>}>
+            <window.GlobalModal isOpen={!!revealData} onClose={() => setRevealData(null)} title="Secure Access Granted" footer={<button onClick={() => setRevealData(null)} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl">{t('actions.close')}</button>}>
                 {revealData && (
                     <div className="space-y-6">
                         <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-700 flex items-center gap-3">

@@ -10,6 +10,9 @@ window.useToasts = () => useContext(window.ToastContext);
 window.JukeboxContext = createContext();
 window.useJukebox = () => useContext(window.JukeboxContext);
 
+window.TranslationContext = createContext();
+window.useTranslation = () => useContext(window.TranslationContext);
+
 // --- Shared Constants ---
 window.THEMES = [
     { id: 'default', name: 'Default', class: 'theme-default' },

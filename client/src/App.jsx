@@ -1,6 +1,7 @@
 window.AuthScreen = ({ onAuthSuccess }) => {
     const { showAlert } = window.useModals();
     const { showToast } = window.useToasts();
+    const { t } = window.useTranslation ? window.useTranslation() : { t: k => k };
     const [mode, setMode] = React.useState('login');
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
@@ -219,6 +220,7 @@ class ErrorBoundary extends React.Component {
 const React = window.React;
 
 window.PublicDocsView = ({ wsPath, folderName }) => {
+    const { t } = window.useTranslation ? window.useTranslation() : { t: k => k };
     const [docs, setDocs] = React.useState([]);
     const [folder, setFolder] = React.useState(null);
     const [workspace, setWorkspace] = React.useState(null);
@@ -386,17 +388,17 @@ window.PublicDocsView = ({ wsPath, folderName }) => {
                             
                                 <div className="mt-12 pt-8 border-t border-gray-100">
                                     <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-sm font-black uppercase tracking-widest text-black">Live API Test</h3>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-black">{t('labels.live_api_test') || 'Live API Test'}</h3>
                                         <button onClick={() => { setShowTestPanel(true); handleTestApi(activeDoc.apiSpec); }} disabled={testLoading} className="px-6 py-3 bg-black text-white rounded-xl text-xs font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition disabled:opacity-50">
-                                            {testLoading ? 'Sending...' : 'Send Request'}
+                                            {testLoading ? t('actions.sending') : t('actions.send_request')}
                                         </button>
                                     </div>
                                     
                                     {showTestPanel && testResponse && (
                                         <div className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden animate-fade-in">
                                             <div className="bg-gray-100 border-b border-gray-200 px-6 py-3 flex gap-6 text-xs font-bold uppercase tracking-widest text-gray-500">
-                                                <span className={testResponse.status === 200 || testResponse.status === 201 ? 'text-emerald-600' : 'text-red-600'}>Status: {testResponse.status}</span>
-                                                <span>Time: {testResponse.time}ms</span>
+                                                <span className={testResponse.status === 200 || testResponse.status === 201 ? 'text-emerald-600' : 'text-red-600'}>{t('labels.status') || 'Status'}: {testResponse.status}</span>
+                                                <span>{t('labels.time') || 'Time'}: {testResponse.time}ms</span>
                                             </div>
                                             <pre className="p-6 text-xs text-gray-800 overflow-x-auto font-mono">
                                                 {typeof testResponse.data === 'object' ? JSON.stringify(testResponse.data, null, 2) : testResponse.data}
@@ -422,6 +424,8 @@ window.PublicDocsView = ({ wsPath, folderName }) => {
 
 window.Main = () => {
     const [user, setUser] = React.useState(() => window.safeParse('nt_user', null));
+    const [lang, setLang] = React.useState(() => localStorage.getItem('nt_lang') || 'en');
+    const [translations, setTranslations] = React.useState({});
     const [ws, setWs] = React.useState(null);
     const [theme, setTheme] = React.useState(() => localStorage.getItem('nt_theme') || 'default');
     const [player, setPlayer] = React.useState({ url: '', isMinimized: true });
@@ -430,6 +434,29 @@ window.Main = () => {
 
     React.useEffect(() => { localStorage.setItem('nt_user', JSON.stringify(user)); }, [user]);
     React.useEffect(() => { localStorage.setItem('nt_theme', theme); }, [theme]);
+    React.useEffect(() => { localStorage.setItem('nt_lang', lang); }, [lang]);
+
+    React.useEffect(() => {
+        fetch(`/src/locales/${lang}.json`)
+            .then(r => r.json())
+            .then(data => setTranslations(data))
+            .catch(err => {
+                console.error('Failed to load translations:', err);
+                if (lang !== 'en') {
+                    fetch('/src/locales/en.json').then(r => r.json()).then(setTranslations).catch(console.error);
+                }
+            });
+    }, [lang]);
+
+    const t = React.useCallback((key) => {
+        const keys = key.split('.');
+        let val = translations;
+        for (let k of keys) {
+            if (!val || typeof val !== 'object') return key;
+            val = val[k];
+        }
+        return val || key;
+    }, [translations]);
 
     const showToast = (message) => { const id = window.generateId('tst'); setToasts(prev => [...prev, { id, message }]); };
     const removeToast = (id) => setToasts(prev => prev.filter(t => t.id !== id));
@@ -459,6 +486,7 @@ window.Main = () => {
     
     return (
         <ErrorBoundary>
+        <window.TranslationContext.Provider value={{ lang, setLang, t }}>
         <window.ModalContext.Provider value={{ showAlert, showConfirm, showPrompt }}>
             <window.JukeboxContext.Provider value={{ ...player, setUrl, setMinimized: (m) => setPlayer(prev => ({...prev, isMinimized: m})) }}>
                 <window.ToastContext.Provider value={{ showToast }}>
@@ -472,7 +500,7 @@ window.Main = () => {
                     
                     <window.GlobalModal isOpen={true} onClose={() => setModalState(prev => ({...prev, isOpen: false}))} title={modalState.title} footer={
                         <div className="flex gap-2">
-                            {modalState.type !== 'alert' && <button onClick={() => setModalState(prev => ({...prev, isOpen: false}))} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold transition">Cancel</button>}
+                            {modalState.type !== 'alert' && <button onClick={() => setModalState(prev => ({...prev, isOpen: false}))} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold transition">{t('actions.cancel')}</button>}
                             <button onClick={() => {
                                 setModalState(prev => ({...prev, isOpen: false}));
                                 if (modalState.callback) {
@@ -480,7 +508,7 @@ window.Main = () => {
                                     else modalState.callback();
                                 }
                             }} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition shadow-md shadow-blue-100">
-                                {modalState.type === 'alert' ? 'OK' : 'Confirm'}
+                                {modalState.type === 'alert' ? t('actions.ok') : t('actions.confirm')}
                             </button>
                         </div>
                     }>
@@ -505,6 +533,7 @@ window.Main = () => {
                 </window.ToastContext.Provider>
             </window.JukeboxContext.Provider>
         </window.ModalContext.Provider>
+        </window.TranslationContext.Provider>
         </ErrorBoundary>
     );
 };

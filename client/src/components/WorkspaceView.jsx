@@ -1,6 +1,7 @@
 window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, theme, onUpdateUser, isJukeboxActive }) => {
     const { showConfirm, showPrompt, showAlert } = window.useModals();
     const { showToast } = window.useToasts();
+    const { t } = window.useTranslation();
     const [columns, setColumns] = React.useState(workspace.columns && workspace.columns.length > 0 ? workspace.columns : [{ id: 'todo', title: 'To Do', order: 0 }]);
     const [cards, setCards] = React.useState([]);
     const [allUsers, setAllUsers] = React.useState([]);
@@ -463,7 +464,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
             <nav className={`h-16 px-6 flex items-center justify-between sticky top-0 z-[120] transition-colors duration-500 shadow-sm ${headerClass}`}>
                 <div className="flex items-center gap-6">
                     <button onClick={() => showConfirm('Exit Workspace', 'Are you sure you want to return to the workspace selection hub?', onBack)} className={`p-2.5 hover:bg-black/5 rounded-xl transition ${isDarkHeader ? 'text-white' : 'text-black'}`}><window.Icon name="arrow-left" size={20}/></button>
-                    <div className={`leading-none ${isDarkHeader ? 'text-white' : 'text-black'}`}><h2 className="text-lg font-black tracking-tighter italic mr-4">Noobieteam</h2><p className="text-[8px] font-black uppercase tracking-[0.4em] opacity-50 mt-1.5">{workspace.name}</p></div>
+                    <div className={`leading-none ${isDarkHeader ? 'text-white' : 'text-black'}`}><h2 className="text-lg font-black tracking-tighter italic mr-4">{t('app_name')}</h2><p className="text-[8px] font-black uppercase tracking-[0.4em] opacity-50 mt-1.5">{workspace.name}</p></div>
                     {isAdmin && (
                         <button onClick={() => setShowUserManagement(true)} className={`text-[10px] font-black uppercase tracking-widest transition hover:opacity-70 flex items-center gap-2 ${isDarkHeader ? 'text-white/80' : 'text-gray-500'}`}>
                             <window.Icon name="users" size={14} /> User Management
@@ -471,9 +472,9 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                     )}
                 </div>
                 <div className="hidden md:flex bg-black/5 p-1 rounded-2xl gap-1">
-                    <button onClick={() => setTab('board')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'board' ? 'bg-white shadow-lg text-black' : isDarkHeader ? 'text-white opacity-40 hover:opacity-100' : 'opacity-40 hover:opacity-100'}`}>Board</button>
-                    <button onClick={() => setTab('vault')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'vault' ? 'bg-white shadow-lg text-black' : isDarkHeader ? 'text-white opacity-40 hover:opacity-100' : 'opacity-40 hover:opacity-100'}`}>Vault</button>
-                    <button onClick={() => setTab('docs')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'docs' ? 'bg-white shadow-lg text-black' : isDarkHeader ? 'text-white opacity-40 hover:opacity-100' : 'opacity-40 hover:opacity-100'}`}>Docs</button>
+                    <button onClick={() => setTab('board')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'board' ? 'bg-white shadow-lg text-black' : isDarkHeader ? 'text-white opacity-40 hover:opacity-100' : 'opacity-40 hover:opacity-100'}`}>{t('tabs.board')}</button>
+                    <button onClick={() => setTab('vault')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'vault' ? 'bg-white shadow-lg text-black' : isDarkHeader ? 'text-white opacity-40 hover:opacity-100' : 'opacity-40 hover:opacity-100'}`}>{t('tabs.vault')}</button>
+                    <button onClick={() => setTab('docs')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'docs' ? 'bg-white shadow-lg text-black' : isDarkHeader ? 'text-white opacity-40 hover:opacity-100' : 'opacity-40 hover:opacity-100'}`}>{t('tabs.docs')}</button>
                 </div>
                 <div className="flex items-center gap-6 relative">
                     <div ref={memberDropdownRef} className={`p-2.5 rounded-xl transition cursor-pointer relative ${isDarkHeader ? "bg-white/10 hover:bg-white/20" : "bg-black/5 hover:bg-black/10"}`} 
@@ -510,9 +511,9 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
             </nav>
             {/* Mobile Tab Nav */}
             <div className="md:hidden flex bg-black/5 p-2 gap-2 justify-center border-b border-gray-100">
-                <button onClick={() => setTab('board')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'board' ? 'bg-white shadow-md text-black' : 'text-gray-500 opacity-60'}`}>Board</button>
-                <button onClick={() => setTab('vault')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'vault' ? 'bg-white shadow-md text-black' : 'text-gray-500 opacity-60'}`}>Vault</button>
-                <button onClick={() => setTab('docs')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'docs' ? 'bg-white shadow-md text-black' : 'text-gray-500 opacity-60'}`}>Docs</button>
+                <button onClick={() => setTab('board')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'board' ? 'bg-white shadow-md text-black' : 'text-gray-500 opacity-60'}`}>{t('tabs.board')}</button>
+                <button onClick={() => setTab('vault')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'vault' ? 'bg-white shadow-md text-black' : 'text-gray-500 opacity-60'}`}>{t('tabs.vault')}</button>
+                <button onClick={() => setTab('docs')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'docs' ? 'bg-white shadow-md text-black' : 'text-gray-500 opacity-60'}`}>{t('tabs.docs')}</button>
             </div>
             {tab === 'board' ? (
                 <main className="p-4 md:p-8 flex-1 overflow-x-auto no-scrollbar flex flex-col animate-fade-in pb-32">
@@ -534,8 +535,8 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                             </div>
                         </div>
                         <div className="flex gap-2">
-                            <button onClick={() => setShowBacklog(!showBacklog)} className={`px-6 py-4 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition flex items-center gap-2 ${showBacklog ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-700 border border-gray-200'}`}><window.Icon name="list" size={14} /> Backlog</button>
-                            <button onClick={() => showPrompt('New Stage', 'Stage name:', async (name) => { if(name) { const newCols = [...columns, { id: window.generateId('col'), title: name }]; await fetch(`/api/workspaces/${workspace.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ columns: newCols }) }); setColumns(newCols); } })} className="bg-black text-white px-8 py-4 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition flex-shrink-0">New Stage</button>
+                            <button onClick={() => setShowBacklog(!showBacklog)} className={`px-6 py-4 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition flex items-center gap-2 ${showBacklog ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-700 border border-gray-200'}`}><window.Icon name="list" size={14} /> {t('actions.backlog')}</button>
+                            <button onClick={() => showPrompt(t('actions.new_stage'), 'Stage name:', async (name) => { if(name) { const newCols = [...columns, { id: window.generateId('col'), title: name }]; await fetch(`/api/workspaces/${workspace.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ columns: newCols }) }); setColumns(newCols); } })} className="bg-black text-white px-8 py-4 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition flex-shrink-0">{t('actions.new_stage')}</button>
                         </div>
                     </header>
                     <dnd.DragDropContext onDragEnd={async (result) => {

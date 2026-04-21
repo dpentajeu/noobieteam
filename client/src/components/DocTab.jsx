@@ -352,7 +352,7 @@ window.DocTab = ({ workspaceId, user }) => {
                                             value={activeDoc.apiSpec?.url}
                                             onChange={e => updateDoc(activeDoc.id || activeDoc._id, { apiSpec: { ...activeDoc.apiSpec, url: e.target.value } })}
                                         />
-                                        <button onClick={() => handleSendRequest(activeDoc)} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition shadow-lg shadow-blue-200" disabled={isApiLoading}>{isApiLoading ? 'Sending...' : 'Send Request'}</button>
+                                        <button onClick={() => handleSendRequest(activeDoc)} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition shadow-lg shadow-blue-200" disabled={isApiLoading}>{isApiLoading ? t('actions.sending') : t('actions.send_request')}</button>
                                     </div>
                                     
                                     {/* Split Pane: Request & Response */}
@@ -411,8 +411,8 @@ window.DocTab = ({ workspaceId, user }) => {
                                                 <span className="text-gray-400">Response</span>
                                                 {apiResponse && (
                                                     <div className="flex gap-4">
-                                                        <span className={apiResponse.status === 200 || apiResponse.status === 201 ? 'text-emerald-400' : 'text-red-400'}>Status: {apiResponse.status} {apiResponse.statusText}</span>
-                                                        <span className="text-blue-400">Time: {apiResponse.time}ms</span>
+                                                        <span className={apiResponse.status === 200 || apiResponse.status === 201 ? 'text-emerald-400' : 'text-red-400'}>{t('labels.status') || 'Status'}: {apiResponse.status} {apiResponse.statusText}</span>
+                                                        <span className="text-blue-400">{t('labels.time') || 'Time'}: {apiResponse.time}ms</span>
                                                     </div>
                                                 )}
                                             </div>
