@@ -9,7 +9,7 @@ The "Documentation" module is a new section within Noobieteam designed to provid
 *   **WYSIWYG Editor:** A high-fidelity rich-text editor (supporting TipTap/Quill) for creating intuitive guides.
 *   **Comprehensive Code Snippets:** Multi-language syntax highlighting with "Copy to Clipboard" functionality.
 *   **Image & Asset Management:** Drag-and-drop image uploads and responsive embedding.
-*   **Nested Hierarchy:** Support for folders and sub-pages to organize large documentation sets.
+*   **Nested Hierarchy & Folders:** Support for creating distinct Folders. Users can group multiple text docs and API endpoints into these folders to streamline search and organization.
 *   **Markdown Interoperability:** Ability to import from and export to standard Markdown files.
 
 ### 2.2 API Documentation & Testing (Postman Style)
@@ -19,7 +19,13 @@ The "Documentation" module is a new section within Noobieteam designed to provid
 *   **Environment Variables:** Define workspace-level variables (e.g., `{{base_url}}`) to switch between Dev/Staging/Production easily.
 *   **Authentication Support:** Out-of-the-box support for Bearer Tokens, API Keys, and Basic Auth.
 
-### 2.3 General Platform Features
+### 2.3 Dynamic Public Documentation Page
+*   **Feature:** Convert any internal folder into a polished, read-only public documentation site.
+*   **Routing:** The dynamic page must follow a clean URL structure: `/[workspace-path]/docs/[folder-name]`.
+*   **Layout:** Similar to Postman's published docs or GitBook. A left-hand navigation sidebar listing all endpoints/pages within the folder, and a main content area rendering the selected document or API spec (with code generation blocks).
+*   **Access:** This page should be viewable by anyone with the link (if set to public), stripping away the internal workspace editing tools and Kanban boards.
+
+### 2.4 General Platform Features
 *   **Unified Search:** Fast, full-text search across all documentation titles and content.
 *   **Role-Based Access:** Inherit workspace permissions (OWNER/MEMBER) for editing and viewing.
 *   **Version History:** Basic audit trail of who changed what and when.
@@ -82,10 +88,17 @@ Stores environment-specific variables for the "Try it out" feature.
 
 ## 4. UI/UX Design Directions
 *   **Theme:** Maintain the "Instagram-style light minimalist" theme (Solid white background, #FAFAFA surfaces, System Blue accents).
-*   **Layout:** 
-    *   **Left Sidebar:** Document tree/hierarchy with distinct icons for Folders, Pages, and API Endpoints.
+*   **Workspace Docs UI (Internal Management):** 
+    *   **Left Sidebar (Tree View):** A file explorer listing all Folders, Text Docs, and APIs.
+        *   **Action:** A "+ New Folder" button at the top of the sidebar.
+        *   **Interaction:** Users must be able to drag-and-drop existing documents/APIs into these folders, or select a folder when creating a new document.
+        *   **Icons:** Use distinct Lucide icons for `lucide-folder`, `lucide-file-text`, and `lucide-braces` (for APIs).
     *   **Central Content:** Wide reading area for text docs; split-pane view for API testing (Request on top/left, Response on bottom/right).
-    *   **Header:** Quick search bar and "Share" button.
+*   **Dynamic Public Documentation UI (External View):**
+    *   **Layout:** A streamlined, read-only interface.
+    *   **Sidebar:** Locks to the specific folder's contents. Only displays docs/APIs within the requested `[folder-name]`.
+    *   **Header:** Minimalist. Displays the Workspace name, Folder name, and an optional "Back to Workspace" link for authenticated members. No editing tools or "Try it out" environments (unless explicitly permitted in a future release).
+    *   **Search:** Scoped strictly to the contents of the public folder.
 
 ## 5. Technical Alignment
 *   **Frontend:** Next.js components using `TipTap` for WYSIWYG and `Prism.js` or `react-syntax-highlighter` for code.
