@@ -15,12 +15,13 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
 
     React.useEffect(() => {
         fetch(`/api/workspaces/${workspace.id}/tasks`).then(r => r.json()).then(data => { 
-            setCards(data); 
+            const validData = Array.isArray(data) ? data : [];
+            setCards(validData); 
             setLoading(false); 
             
             // Check for expired cards
             const now = new Date();
-            const expired = data.filter(c => {
+            const expired = validData.filter(c => {
                 if (c.archived || !c.dueDate || c.expiredAlertAcknowledged) return false;
                 // Exclude cards in 'done' column or any column title like 'Done'
                 const parentCol = columns.find(col => col.id === c.columnId);
@@ -35,7 +36,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                 setSelectedMoveCol(columns[0]?.id || 'todo');
             }
         }).catch(console.error);
-        fetch('/api/users').then(r => r.json()).then(setAllUsers).catch(console.error);
+        fetch('/api/users').then(r => r.json()).then(data => setAllUsers(Array.isArray(data) ? data : [])).catch(console.error);
         
         // Fetch unseen emojis
         const fetchUnseenEmojis = async () => {
@@ -164,7 +165,8 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
     };
 
     const displayCards = React.useMemo(() => {
-        return cards.filter(c => {
+        const uniqueCards = Array.from(new Map((Array.isArray(cards) ? cards : []).filter(c => c && (c.id || c._id)).map(c => [String(c.id || c._id), c])).values());
+        return uniqueCards.filter(c => {
             if (!c) return false;
             if (c.archived) return false;
             const title = c.title || '';
@@ -200,7 +202,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
     const isDarkHeader = ['dark', 'darkblue', 'green', 'ocean'].includes(theme);
 
     const getMemberData = (email) => {
-        return allUsers.find(u => u.email === email) || { email, avatar: null };
+        return (Array.isArray(allUsers) ? allUsers : []).find(u => u.email === email) || { email, avatar: null };
     };
 
     const colThemeClasses = React.useMemo(() => {
@@ -609,8 +611,8 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                         <dnd.Droppable droppableId="all-columns" direction="horizontal" type="COLUMN">
                         {(providedBoard) => (
                             <div className="flex gap-10 flex-1 items-start h-full overflow-x-auto no-scrollbar" {...providedBoard.droppableProps} ref={providedBoard.innerRef}>
-                                {columns.map((col, index) => (
-                                    <dnd.Draggable key={col.id} draggableId={col.id} index={index}>
+                                {columns.filter(col => col.id !== 'backlog').map((col, index) => (
+                                    <dnd.Draggable key={String(col.id || `col-${index}`)} draggableId={String(col.id || `col-${index}`)} index={index}>
                                         {(providedCol) => (
                                             <div ref={providedCol.innerRef} {...providedCol.draggableProps} className={`min-w-[310px] flex flex-col gap-4 group ${colThemeClasses} rounded-[2rem] p-4 h-fit max-h-full`}>
                                                 <div {...providedCol.dragHandleProps} className={`flex justify-between items-center px-4 border-b border-inherit pb-4 pt-2`}>
@@ -627,7 +629,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                             })} className={`p-1.5 rounded-lg transition ${colIconThemeClasses}`}><window.Icon name="minus-circle" size={18} /></button>}
                                                     </div>
                                                 </div>
-                                                <dnd.Droppable droppableId={col.id}>
+                                                <dnd.Droppable droppableId={String(col.id || `col-${index}`)}>
                                                     {(providedCards) => (
                                                         <div ref={providedCards.innerRef} {...providedCards.droppableProps} className="space-y-8 min-h-[100px] overflow-y-auto no-scrollbar flex-1 pb-4">
                                                             {displayCards.filter(c => c && (c.columnId === col.id || c.col === col.id)).map((card, idx) => (
