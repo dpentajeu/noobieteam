@@ -31,10 +31,7 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Failed to save PIN.');
 
-                    if (!data || (!data.vaultPin && !data.success && !data._id && data.error === undefined)) {
-                        console.error("Vault PIN verification failed. Payload:", data);
-                        throw new Error('Server successfully saved PIN but returned malformed verification data.');
-                    }
+                    if (!data) throw new Error('Empty payload returned from API.');
                     
                     const updatedUser = Object.assign({}, user || {}, { vaultPin: data.vaultPin });
                     onUpdateUser(updatedUser);
