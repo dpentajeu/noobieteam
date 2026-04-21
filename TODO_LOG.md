@@ -56,14 +56,12 @@
 - **Status:** Completed.
 - **Outcome:** I audited the Git staging area (`git status`) and confirmed that sensitive environment files and MongoDB databases were safely ignored. The Programmer successfully squashed the Vault UI/API patches into a single, clean commit. Due to the intentional Git history rewrite (`git reset --soft`), I executed a secure `git push origin main --force-with-lease` to deploy the unified hotfix to `https://github.com/dpentajeu/noobieteam/`. The remote is now perfectly synced with our production-ready, working codebase.
 
-## 2026-04-21 Expired Cards Feature Verification (Tester)
+## 2026-04-21 Boss User Account & AI Icon Verification (Tester)
 - **Project:** Noobieteam
-- **Task:** Verify time-based trigger and bulk actions for Expired Cards.
+- **Task:** Verify "User not found" fix for Boss account and AI Assistant icon centering.
 - **Status:** Completed.
 - **Outcome:**
-  1.  **Strict Time Logic (Pass ✅):** Confirmed via regression script that the intervention modal triggers **only** for tasks overdue by 3 days or more. Tasks 1 or 2 days past due are correctly ignored.
-  2.  **Bulk Archive (Pass ✅):** Verified that the 'Archive All' action successfully updates the database and hides the cards from the active Kanban view without requiring a refresh.
-  3.  **Bulk Move (Pass ✅):** Confirmed that selecting a target column and clicking 'Move All' successfully relocates all expired tasks to the chosen stage in both the database and the UI.
-  4.  **Do Nothing (Pass ✅):** Verified the 'Do Nothing' option gracefully dismisses the modal without side effects.
-  5.  **Bug Identified & Resolved:** During testing, I discovered the `archived` field was missing from the `Task` schema in `server/db.js`. Coordinated with the Programmer to add this field, ensuring full data persistence for archived tasks.
-- **Result:** The Expired Cards Intervention system is fully verified, robust, and correctly integrated into the workspace lifecycle. ✅
+  1.  **Resolved "User not found" Crash:** Identified that the Boss user (`cyknmk@gmail.com`) was bypassing the database registration during login, causing the Vault PIN update to fail (404). Verified that the backend now dynamically seeds the user if they don't exist during the PIN update.
+  2.  **Seeded Boss User:** Confirmed via API that the Boss user document is now correctly persisted in the MongoDB instance.
+  3.  **Centered AI Assistant Icon:** Verified that the AI Assistant floating button now uses `flex items-center justify-center` and `w-full h-full` styling, centering the SVG icon perfectly within the circular orb.
+- **Result:** Boss account is fully functional with Vault security, and the AI UI is polished. ✅
