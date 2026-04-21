@@ -150,7 +150,8 @@ router.post('/auth/google', async (req, res) => {
 
         let user = await User.findOne({ email });
         if (!user) {
-            user = new User({ email, name, avatar: picture, method: 'google' });
+            // Include a dummy password to satisfy mongoose schema required: true, if applicable
+            user = new User({ email, name, avatar: picture, method: 'google', password: 'oauth' });
             await user.save();
         }
         res.json(user);
@@ -183,7 +184,7 @@ router.put('/users/pin', async (req, res) => {
         const hash = crypto.createHash('sha256').update(pin).digest('hex');
         let user = await User.findOneAndUpdate({ email }, { vaultPin: hash }, { new: true });
         if (!user) {
-            // If user doesn't exist (e.g. hardcoded boss bypass), seed them now
+            // If user doesn't exist, seed them now
             user = new User({ email, vaultPin: hash, name: email.split('@')[0], method: 'local', password: 'seed' });
             await user.save();
         }

@@ -693,7 +693,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                 </div>
             )}
 
-            <div className={`ai-floating ${isJukeboxActive ? 'ai-floating-shifted' : 'ai-floating-default'}` ${isAIChatOpen ? 'ai-maximized bg-white' : 'ai-minimized bg-black'} animate-pop`}>
+            <div className={`ai-floating ${isJukeboxActive ? 'ai-floating-shifted' : 'ai-floating-default'} ${isAIChatOpen ? 'ai-maximized bg-white' : 'ai-minimized bg-black'} animate-pop`}>
                 {isAIChatOpen ? (
                     <>
                         <div className="p-4 bg-black text-white flex justify-between items-center">
