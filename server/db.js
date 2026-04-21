@@ -69,6 +69,7 @@ const taskSchema = new mongoose.Schema({
   workspaceId: { type: String, required: true },
   columnId: String,
   title: { type: String, required: true },
+  archived: { type: Boolean, default: false },
   content: String,
   urgency: { type: String, enum: ['LOW', 'MED', 'HIGH'], default: 'LOW' },
   dueDate: Date,
