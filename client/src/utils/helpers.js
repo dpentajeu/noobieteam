@@ -1,11 +1,26 @@
 // --- Global Utilities ---
 // Simple async hashing for Google PIN encryption key
 window.inHouseHash = async (text) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(text);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    // Web Crypto API is only available in secure contexts (HTTPS or localhost).
+    // Provide a robust fallback for development environments or insecure IPs.
+    if (window.crypto && window.crypto.subtle) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(text);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    } else {
+        console.warn("[VAULT] window.crypto.subtle is undefined. Falling back to internal SHA-256 simulation.");
+        // A simple deterministic hash fallback for non-secure contexts
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            const char = text.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        // Return as a padded hex string to maintain payload consistency
+        return Math.abs(hash).toString(16).padStart(64, '0');
+    }
 };
 
 

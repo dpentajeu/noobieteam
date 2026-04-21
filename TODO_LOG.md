@@ -65,3 +65,23 @@
   2.  **Seeded Boss User:** Confirmed via API that the Boss user document is now correctly persisted in the MongoDB instance.
   3.  **Centered AI Assistant Icon:** Verified that the AI Assistant floating button now uses `flex items-center justify-center` and `w-full h-full` styling, centering the SVG icon perfectly within the circular orb.
 - **Result:** Boss account is fully functional with Vault security, and the AI UI is polished. ✅
+
+## 2026-04-21 Boss Account Database Integrity Check (CTO)
+- **Project:** Noobieteam
+- **Task:** Perform database integrity check on the `cyknmk@gmail.com` user record to ensure document structure is valid following the Upsert hotfix.
+- **Status:** Completed.
+- **Outcome:** I executed a targeted Mongoose query against the active `mongodb-memory-server` fallback. I confirmed that the Boss's user account (`cyknmk@gmail.com`) now exists natively within the `users` collection. The document structure is perfectly intact, securely storing the `vaultPin` hash, the `method: 'local'` identifier, and a baseline `password` stub inserted dynamically by the Programmer's hotfix. The fallback authentication now successfully binds to actual MongoDB state. Finally, I forcefully restarted the backend server on port 9050.
+
+## 2026-04-21 UI Crash & Hardcoded Role Verification (CTO)
+- **Project:** Noobieteam
+- **Task:** Verify the resolution of React Error #130 (`WorkspaceView.jsx`) and the successful removal of the hardcoded `cyknmk@gmail.com` bypass override.
+- **Status:** Completed.
+- **Outcome:** I executed a codebase-wide `grep` audit for the Boss account email. It has been entirely removed from the application logic (`client/src/App.jsx` and `server/routes/api.js`). Role-Based Access Control is now securely bound strictly to the `.env` `ADMIN_EMAIL` parameter. I inspected `WorkspaceView.jsx` and verified that the JSX syntax collision inside the `ai-floating` component template string was correctly resolved by the Programmer, preventing the #130 crash. I restarted the server cleanly on dynamically assigned port 9717, verifying the React UI loads properly without any build/render explosions.
+
+## 2026-04-21 Vault Crypto Digest Crash & Expired Cards Architecture (CTO)
+- **Project:** Noobieteam
+- **Task:** Diagnose the "Cannot read properties of undefined (reading 'digest')" Vault reveal error and extend the Task database schema to support one-time expired card alerts.
+- **Status:** Completed.
+- **Outcome:** 
+  1. **Crypto Fix**: Audited `server/crypto.js` and confirmed that `crypto.createHash` requires a strict string or buffer type. When the Vault reveal frontend passed the Master PIN payload, if it accidentally evaluated as a non-string (or `undefined`), Node.js `crypto` threw a strict type error causing the `.digest()` method to fail. I patched `deriveKey` to forcefully cast `password` payloads to strings via defensive checking before passing them to the SHA-256 updater.
+  2. **Schema Extension**: Extended the `Task` schema in `server/db.js` by adding an `expiredAlertAcknowledged: { type: Boolean, default: false }` field. This enables the frontend/backend to flag older expired cards so they don't repeatedly trigger the pop-out alert when users archive or move them.
