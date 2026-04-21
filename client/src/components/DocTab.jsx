@@ -130,9 +130,21 @@ window.DocTab = ({ workspaceId, user }) => {
     const [isDocEditing, setIsDocEditing] = React.useState(false);
 
     React.useEffect(() => {
-        Promise.all([
-            fetch(`/api/workspaces/${workspaceId}/docs`).then(r => r.json())
-        ]).then(([d]) => { setDocs(d); setLoading(false); }).catch(console.error);
+        setLoading(true);
+        fetch(`/api/workspaces/${workspaceId}/docs`)
+            .then(r => {
+                if (!r.ok) throw new Error("Backend retrieval failed");
+                return r.json();
+            })
+            .then(d => { 
+                setDocs(Array.isArray(d) ? d : []); 
+                setLoading(false); 
+            })
+            .catch(err => {
+                console.error("Docs load error:", err);
+                setDocs([]);
+                setLoading(false);
+            });
     }, [workspaceId]);
 
     const addDoc = async (type) => {

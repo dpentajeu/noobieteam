@@ -85,11 +85,10 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
         setRevealError('');
         try {
             const s = secrets.find(x => (x.id === revealPrompt.id || x._id === revealPrompt.id));
-            const payloadPass = await window.inHouseHash(revealPrompt.pass);
             const res = await fetch('/api/workspaces/' + workspace.id + '/vault/decrypt', { 
                 method: 'POST', 
                 headers: {'Content-Type':'application/json'}, 
-                body: JSON.stringify({ cipherBase64: s.value, password: payloadPass }) 
+                body: JSON.stringify({ cipherBase64: s.value, password: revealPrompt.pass }) 
             });
             
             if (res.status === 401) {

@@ -38,7 +38,8 @@ const userSchema = new mongoose.Schema({
   name: String,
   avatarUrl: String,
   method: { type: String, default: 'local' },
-  vaultPin: { type: String } // Hashed PIN for Google OAuth vault decryption
+  vaultPin: { type: String }, // Hashed PIN for Google OAuth vault decryption
+  lastLogin: { type: Date }
 }, { timestamps: true });
 
 const workspaceSchema = new mongoose.Schema({

@@ -9,6 +9,34 @@ window.AuthScreen = ({ onAuthSuccess }) => {
         return String(email).toLowerCase().match(/^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/);
     };
 
+    const handleLogin = async (email, password) => {
+        try {
+            const res = await fetch('/api/auth/login', { 
+                method: 'POST', 
+                headers: {'Content-Type':'application/json'}, 
+                body: JSON.stringify({ email, password }) 
+            });
+            if (!res.ok) throw new Error('Unauthorized: Credentials mismatch.');
+            const user = await res.json();
+            onAuthSuccess(user);
+            showToast(`Welcome back, ${user.name || email.split('@')[0]}! 🚀`);
+        } catch (e) {
+            showAlert(e.message, 'Access Denied');
+        }
+    };
+
+    const handleGoogleResponse = async (response) => {
+        try {
+            const res = await fetch('/api/auth/google', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ credential: response.credential }) });
+            if (!res.ok) throw new Error('Google authentication failed on server.');
+            const user = await res.json();
+            onAuthSuccess(user);
+            showToast(`Welcome back, ${user.name || user.email.split('@')[0]}! 🚀`);
+        } catch (e) {
+            showAlert(e.message, 'Google Sign-In Error');
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateEmail(email)) return showAlert('Please enter a valid email address.', 'Invalid Email');
@@ -22,28 +50,7 @@ window.AuthScreen = ({ onAuthSuccess }) => {
                 showAlert('User profile registered. Please login.', 'Signup Sync');
             } catch(e) { showAlert(e.message, 'Error'); }
         } else {
-            try {
-                
-                const res = await fetch('/api/users');
-                const users = await res.json();
-                const user = users.find(u => u.email === email && u.password === password);
-                if (user) {
-                    onAuthSuccess(user);
-                    showToast(`Welcome back, User ${email.split('@')[0]}! 🚀`);
-                } else showAlert('Critical Error: Unauthorized access. Credentials mismatch.', 'Access Denied');
-            } catch(e) { showAlert(e.message, 'Error'); }
-        }
-    };
-
-    const handleGoogleResponse = async (response) => {
-        try {
-            const res = await fetch('/api/auth/google', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ credential: response.credential }) });
-            if (!res.ok) throw new Error('Google authentication failed on server.');
-            const user = await res.json();
-            onAuthSuccess(user);
-            showToast(`Welcome back, ${user.name || user.email.split('@')[0]}! 🚀`);
-        } catch (e) {
-            showAlert(e.message, 'Google Sign-In Error');
+            handleLogin(email, password);
         }
     };
 

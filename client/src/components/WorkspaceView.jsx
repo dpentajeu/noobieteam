@@ -446,12 +446,24 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
         }
     };
 
+    const isAdmin = user?.email === window.NT_ADMIN_EMAIL || user?.email === 'admin@noobieteam.ai';
+    const [showUserManagement, setShowUserManagement] = React.useState(false);
+
+    React.useEffect(() => {
+        fetch('/api/config').then(res => res.json()).then(data => { window.NT_ADMIN_EMAIL = data.adminEmail; }).catch(console.error);
+    }, []);
+
     return (
         <div className="min-h-screen flex flex-col bg-white overflow-hidden text-black">
             <nav className={`h-16 px-6 flex items-center justify-between sticky top-0 z-[120] transition-colors duration-500 shadow-sm ${headerClass}`}>
                 <div className="flex items-center gap-6">
                     <button onClick={() => showConfirm('Exit Workspace', 'Are you sure you want to return to the workspace selection hub?', onBack)} className={`p-2.5 hover:bg-black/5 rounded-xl transition ${isDarkHeader ? 'text-white' : 'text-black'}`}><window.Icon name="arrow-left" size={20}/></button>
-                    <div className={`leading-none ${isDarkHeader ? 'text-white' : 'text-black'}`}><h2 className="text-lg font-black tracking-tighter italic">Noobieteam</h2><p className="text-[8px] font-black uppercase tracking-[0.4em] opacity-50 mt-1.5">{workspace.name}</p></div>
+                    <div className={`leading-none ${isDarkHeader ? 'text-white' : 'text-black'}`}><h2 className="text-lg font-black tracking-tighter italic mr-4">Noobieteam</h2><p className="text-[8px] font-black uppercase tracking-[0.4em] opacity-50 mt-1.5">{workspace.name}</p></div>
+                    {isAdmin && (
+                        <button onClick={() => setShowUserManagement(true)} className={`text-[10px] font-black uppercase tracking-widest transition hover:opacity-70 flex items-center gap-2 ${isDarkHeader ? 'text-white/80' : 'text-gray-500'}`}>
+                            <window.Icon name="users" size={14} /> User Management
+                        </button>
+                    )}
                 </div>
                 <div className="flex bg-black/5 p-1 rounded-2xl gap-1">
                     <button onClick={() => setTab('board')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'board' ? 'bg-white shadow-lg text-black' : isDarkHeader ? 'text-white opacity-40 hover:opacity-100' : 'opacity-40 hover:opacity-100'}`}>Board</button>
@@ -760,6 +772,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                 </div>
             </window.GlobalModal>
 
+            {showUserManagement && <window.UserManagement user={user} adminEmail={window.NT_ADMIN_EMAIL} onClose={() => setShowUserManagement(false)} />}
         </div>
     );
 };

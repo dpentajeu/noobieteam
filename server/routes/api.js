@@ -151,13 +151,28 @@ router.post('/auth/google', async (req, res) => {
         let user = await User.findOne({ email });
         if (!user) {
             // Include a dummy password to satisfy mongoose schema required: true, if applicable
-            user = new User({ email, name, avatar: picture, method: 'google', password: 'oauth' });
+            user = new User({ email, name, avatar: picture, method: 'google', password: 'oauth', lastLogin: new Date() });
+            await user.save();
+        } else {
+            user.lastLogin = new Date();
             await user.save();
         }
         res.json(user);
     } catch(e) { 
         res.status(500).json({ error: e.message }); 
     }
+});
+
+router.post('/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email, password });
+        if (!user) return res.status(401).json({ error: 'Credentials mismatch' });
+        
+        user.lastLogin = new Date();
+        await user.save();
+        res.json(user);
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 router.get('/users', async (req, res) => {
@@ -197,6 +212,15 @@ router.put('/users/:email', async (req, res) => {
       const user = await User.findOneAndUpdate({ email: req.params.email }, req.body, { new: true });
       res.json(user);
     } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/workspaces/:wsId/docs', async (req, res) => {
+  try {
+    const docs = await Doc.find({ workspaceId: req.params.wsId });
+    res.json(docs);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 router.post('/workspaces/:wsId/docs', async (req, res) => {
@@ -247,7 +271,12 @@ router.post('/workspaces/:wsId/vault/encrypt', async (req, res) => {
         const { text, password } = req.body;
         if (!text || !password) return res.status(400).json({ error: 'Missing payload' });
         
-        const safePassword = String(password);
+        let safePassword = String(password);
+        // Consistent hashing for keys < 64 chars
+        if (safePassword.length < 64) {
+            safePassword = crypto.createHash('sha256').update(safePassword).digest('hex');
+        }
+
         const key = crypto.scryptSync(safePassword, 'salt', 32);
         const iv = crypto.randomBytes(12);
         const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
@@ -283,9 +312,16 @@ router.post('/workspaces/:wsId/vault/decrypt', async (req, res) => {
         
         res.json({ decrypted });
     } catch (e) {
-        // e.g. wrong password -> auth tag mismatch -> Decipher final failed
-        res.status(401).json({ error: 'Incorrect password. Unable to decrypt secret. ' + e.message });
+        res.status(401).json({ error: 'Incorrect password. Unable to decrypt secret.' });
     }
+});
+
+// --- Admin ---
+router.post('/admin/users/:email/reset-pin', async (req, res) => {
+    try {
+        const user = await User.findOneAndUpdate({ email: req.params.email }, { vaultPin: null }, { new: true });
+        res.json({ success: true, user });
+    } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
 module.exports = router;

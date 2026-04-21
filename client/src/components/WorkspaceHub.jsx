@@ -61,6 +61,7 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
                 fetch('/api/config').then(res => res.json()).then(data => setAdminEmail(data.adminEmail)).catch(console.error);
             }, []);
             const isAdmin = user?.email === adminEmail;
+            const [showUserManagement, setShowUserManagement] = React.useState(false);
 
             React.useEffect(() => { localStorage.setItem('nt_workspaces', JSON.stringify(workspaces)); }, [workspaces]);
 
@@ -125,9 +126,17 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
                 </div>
             )}
                     <nav className={`h-16 px-6 lg:px-12 flex items-center justify-between transition-colors duration-500 shadow-sm ${headerClass}`}>
-                        <h1 className={`text-xl font-black italic tracking-tighter ${isDarkHeader ? 'text-white' : 'text-black'}`}>Noobieteam</h1>
+                        <div className="flex items-center gap-8">
+                            <h1 className={`text-xl font-black italic tracking-tighter ${isDarkHeader ? 'text-white' : 'text-black'}`}>Noobieteam</h1>
+                            {isAdmin && (
+                                <button onClick={() => setShowUserManagement(true)} className={`text-[10px] font-black uppercase tracking-widest transition hover:opacity-70 flex items-center gap-2 ${isDarkHeader ? 'text-white/80' : 'text-gray-500'}`}>
+                                    <window.Icon name="users" size={14} /> User Management
+                                </button>
+                            )}
+                        </div>
                         <window.ProfileMenu user={user} onLogout={onLogout} onThemeChange={onThemeChange} currentTheme={theme} onUpdateUser={onUpdateUser} />
                     </nav>
+                    {showUserManagement && <window.UserManagement user={user} adminEmail={adminEmail} onClose={() => setShowUserManagement(false)} />}
                     <div className="max-w-5xl mx-auto p-10 flex-1">
                         <header className="mb-12 flex justify-between items-end">
                             <div>
