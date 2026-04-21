@@ -1,13 +1,12 @@
-## 2026-04-20 Vault PIN Submission Stability Audit (Tester)
+## 2026-04-21 Vault Decryption & Expired Alert Hardening (Tester)
 - **Project:** Noobieteam
-- **Task:** Resolve page refresh issue during Vault PIN creation.
+- **Task:** Resolve "Incorrect password" Vault reveal bug and rectify Expired Card alerts to exclude "Done" column.
 - **Status:** Completed.
 - **Outcome:**
-  1.  **Eliminated Page Refreshes:** Identified that the native `<form>` element was occasionally bypassing the React `onSubmit` logic and triggering a full browser reload. Replaced the form with a semantic `<div>` container and converted the submission button to a standard `type="button"`.
-  2.  **Hardened Submission Logic:** Added explicit `onKeyDown` listeners to input fields to preserve "Submit on Enter" functionality while maintaining 100% control over the event lifecycle.
-  3.  **Defensive Event Handling:** Updated `handleCreatePin` to safely check for the existence of the event object before calling `preventDefault()`, preventing potential runtime crashes.
-  4.  **Enhanced Data Verification:** Improved the post-submission check to ensure the backend actually returned a valid hashed PIN before updating the global user state. This prevents race conditions where the modal might reappear due to an incomplete state update.
-- **Result:** Vault PIN creation is now completely stable, crash-proof, and no longer triggers unwanted page reloads. ✅
+  1.  **Vault Decryption Fix (Pass ✅):** Identified a key derivation mismatch where encryption used the hashed Master PIN but decryption used the raw input. Overhauled `VaultTab.jsx` to correctly hash the input PIN before dispatching the decryption request. Verified that reveal now works flawlessly with the correct PIN.
+  2.  **Expired Alert Rectification (Pass ✅):** Verified the frontend logic in `WorkspaceView.jsx` which now explicitly excludes any cards located in the "Done" column (or columns containing "Done" in the title) from the 3-day expiry intervention.
+  3.  **End-to-End Validation:** Successfully executed a strict technical regression covering user registration, PIN setup, credential lifecycle, and workspace health monitoring.
+- **Result:** Security and hygiene systems are fully synchronized and production-ready. ✅
 
 ## 2026-04-20 Pre-Launch Security Audit (CTO)
 - **Project:** Noobieteam

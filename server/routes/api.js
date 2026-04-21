@@ -268,7 +268,10 @@ router.post('/workspaces/:wsId/vault/decrypt', async (req, res) => {
         const { cipherBase64, password } = req.body;
         if (!cipherBase64 || !password) return res.status(400).json({ error: 'Missing payload' });
         
-        const safePassword = String(password);
+        let safePassword = String(password);
+        if (safePassword.length < 64) {
+            safePassword = crypto.createHash('sha256').update(safePassword).digest('hex');
+        }
         const payload = JSON.parse(Buffer.from(cipherBase64, 'base64').toString('utf8'));
         const key = crypto.scryptSync(safePassword, 'salt', 32);
         
