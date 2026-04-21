@@ -35,12 +35,19 @@
 - **Status:** Completed.
 - **Outcome:** I forcefully wiped any residual `node_modules/.cache` and `node_modules/.vite` artifacts to guarantee that the `window.PublicDocsView` component (which handles dynamic read-only postman pages) binds cleanly to the `App.jsx` router. The server was cleanly spun down and rebooted on dynamic port 9501. The Kanban workspace, the Vault, and the new Documentation Module tab (complete with hierarchical folder support) load effortlessly without any React explosions.
 
+## 2026-04-21 Dynamic Docs Route & UX Hotfixes (CTO)
+- **Project:** Noobieteam
+- **Task:** Audit the Express routing for the public documentation feature to resolve the `Documentation not found` crash, ensure Jukebox UX defaults to minimized, and verify debug alerts are removed from DocTab buttons.
+- **Status:** Completed.
+- **Outcome:** I audited `/api/public/docs/:wsId/:folderSlug` in `server/routes/api.js`. The root cause of the "Documentation not found" error was a deeply hidden MongoDB CastError. Mongoose's `ObjectId.isValid()` method incorrectly returns `true` for *any* generic 12-character string (like `"workspace123"`). I hardened the backend query logic to explicitly check `String(req.params.wsId).length === 24` before treating a URL parameter as an `ObjectId`. The API now safely falls back to searching by workspace/folder name if it's a vanity URL, successfully serving the JSON payload instead of crashing. Furthermore, I verified the removal of hardcoded debug alerts in `DocTab.jsx` and updated `App.jsx` so the `FloatingJukebox` component initializes in a minimized state (`isMinimized: true`). The server was safely restarted on dynamic port 8137.
+
 ## 2026-04-21 UI/UX Specs for Jira-Style Backlog Module
 - **Action:** Created `BACKLOG_UX_SPECS.md` detailing the design for the new Backlog feature.
 - **Specs Added:** 
-  1. Defined the high-density vertical list view (rows instead of cards) to manage unprioritized tasks.
-  2. Specified the integration method: a Side Drawer or Dual-Pane view to allow simultaneous visibility with the active Kanban board.
-  3. Detailed the core drag-and-drop interaction flow: users can drag rows directly from the Backlog into the 'To Do' column of the active board.
+  1. Defined the trigger as a distinct toggle button (`lucide-list`) in the Workspace header/menu.
+  2. Specified the integration method: a collapsible side-drawer that overlays the board but remains visible alongside it.
+  3. Defined the high-density vertical list view (rows instead of cards) to manage unprioritized tasks.
+  4. Detailed the core drag-and-drop interaction flow: users click and drag a row from the Backlog, a 'ghost' placeholder follows the cursor, and dropping it onto the 'To Do' column instantly converts it to an active card.
 - **Outcome:** The UX blueprints for the Backlog are complete. Handed off to the CTO and Programmer for frontend implementation and potential schema updates.
 
 ## 2026-04-21 Dynamic Docs & Jukebox State Final Verification (Tester)
