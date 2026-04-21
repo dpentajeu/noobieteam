@@ -31,7 +31,7 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error || 'Failed to save PIN.');
 
-                    if (!data || !data.vaultPin) {
+                    if (!data || (!data.vaultPin && !data.success && !data._id)) {
                         console.error("Vault PIN verification failed. Payload:", data);
                         throw new Error('Server successfully saved PIN but returned malformed verification data.');
                     }
@@ -116,7 +116,7 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
                         <div className="space-y-4">
                             <input className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 text-black font-black" type="password" placeholder="Enter PIN" autoFocus required value={pinPrompt.pin} onChange={e => { setPinPrompt(p => ({ ...p, pin: e.target.value })); setPinError(''); }} onKeyDown={e => e.key === 'Enter' && handleCreatePin(e)} />
                             <input className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 text-black font-black" type="password" placeholder="Confirm PIN" required value={pinPrompt.confirm} onChange={e => { setPinPrompt(p => ({ ...p, confirm: e.target.value })); setPinError(''); }} onKeyDown={e => e.key === 'Enter' && handleCreatePin(e)} />
-                            <button type="button" onClick={handleCreatePin} disabled={pinLoading} className="w-full py-3 bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-100 hover:scale-105 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                            <button type="button" onClick={(e) => handleCreatePin(e)} disabled={pinLoading} className="w-full py-3 bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-100 hover:scale-105 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-2">
                                 {pinLoading && <window.Icon name="loader" size={14} className="animate-spin" />} Create Vault PIN
                             </button>
                             {pinError && <p className="text-red-500 text-[10px] font-bold animate-shake">{pinError}</p>}
