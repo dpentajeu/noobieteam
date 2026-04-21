@@ -99,17 +99,6 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
     
     // Safety check for Drag and Drop library
     const dnd = window.ReactBeautifulDnd;
-    if (!dnd) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-yellow-50 p-10">
-                <div className="max-w-md bg-white p-8 rounded-3xl shadow-xl text-center">
-                    <h2 className="text-xl font-black text-yellow-600 mb-4">Library Load Error</h2>
-                    <p className="text-sm text-gray-500 mb-6">The Drag and Drop engine (ReactBeautifulDnd) failed to initialize. This usually happens due to a slow network connection to the CDN.</p>
-                    <button onClick={() => window.location.reload()} className="px-6 py-2 bg-yellow-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest">Retry Connection</button>
-                </div>
-            </div>
-        );
-    }
     const [aiMessages, setAiMessages] = React.useState([{ role: 'bot', content: "Hello! I am NoobieHelper. I can help you manage your Kanban board via natural language. How can I assist today?" }]);
     const [aiInput, setAiInput] = React.useState('');
     const [showEmojiPicker, setShowEmojiPicker] = React.useState(false);
@@ -454,6 +443,19 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
         fetch('/api/config').then(res => res.json()).then(data => { window.NT_ADMIN_EMAIL = data.adminEmail; }).catch(console.error);
     }, []);
 
+
+    if (!dnd) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-yellow-50 p-10">
+                <div className="max-w-md bg-white p-8 rounded-3xl shadow-xl text-center">
+                    <h2 className="text-xl font-black text-yellow-600 mb-4">Library Load Error</h2>
+                    <p className="text-sm text-gray-500 mb-6">The Drag and Drop engine (ReactBeautifulDnd) failed to initialize. This usually happens due to a slow network connection to the CDN.</p>
+                    <button onClick={() => window.location.reload()} className="px-6 py-2 bg-yellow-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest">Retry Connection</button>
+                </div>
+            </div>
+        );
+    }
+    
     return (
         <div className="min-h-screen flex flex-col bg-white overflow-hidden text-black">
             <nav className={`h-16 px-6 flex items-center justify-between sticky top-0 z-[120] transition-colors duration-500 shadow-sm ${headerClass}`}>
@@ -523,9 +525,10 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                 </button>
                             </div>
                         </div>
-                        <button onClick={() => setShowBacklog(!showBacklog)} className={`px-6 py-4 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition flex items-center gap-2 ${showBacklog ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-700 border border-gray-200'}`}><window.Icon name="list" size={14} /> Backlog</button>
-                        <button onClick={() => showPrompt('New Stage', 'Stage name:', async (name) => { if(name) { const newCols = [...columns, { id: window.generateId('col'), title: name }]; await fetch(`/api/workspaces/${workspace.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ columns: newCols }) }); setColumns(newCols); } })} className="bg-black text-white px-8 py-4 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition flex-shrink-0">New Stage</button>
-                    </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => setShowBacklog(!showBacklog)} className={`px-6 py-4 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition flex items-center gap-2 ${showBacklog ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-700 border border-gray-200'}`}><window.Icon name="list" size={14} /> Backlog</button>
+                            <button onClick={() => showPrompt('New Stage', 'Stage name:', async (name) => { if(name) { const newCols = [...columns, { id: window.generateId('col'), title: name }]; await fetch(`/api/workspaces/${workspace.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ columns: newCols }) }); setColumns(newCols); } })} className="bg-black text-white px-8 py-4 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition flex-shrink-0">New Stage</button>
+                        </div>
                     </header>
                     <dnd.DragDropContext onDragEnd={async (result) => {
                                 if (!result.destination) return;
@@ -575,7 +578,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                     {(provided) => (
                                         <div ref={provided.innerRef} {...provided.droppableProps} className="flex-1 overflow-y-auto no-scrollbar p-3 space-y-2 min-h-[100px]">
                                             {displayCards.filter(c => c && (c.columnId === 'backlog' || c.col === 'backlog')).map((card, idx) => (
-                                                <dnd.Draggable key={card.id || card._id} draggableId={card.id || card._id} index={idx}>
+                                                <dnd.Draggable key={card.id || card._id || `backlog-${idx}`} draggableId={card.id || card._id || `backlog-${idx}`} index={idx}>
                                                     {(dragProvided, snapshot) => (
                                                         <div ref={dragProvided.innerRef} {...dragProvided.draggableProps} {...dragProvided.dragHandleProps} onClick={() => setEditingCard(card)} className={`bg-white border border-gray-100 rounded-xl p-3 shadow-sm hover:shadow-md transition cursor-pointer flex justify-between items-center group ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl z-50' : ''}`}>
                                                             <div className="flex flex-col gap-1 overflow-hidden pr-2">
@@ -628,7 +631,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                                     {(providedCards) => (
                                                         <div ref={providedCards.innerRef} {...providedCards.droppableProps} className="space-y-8 min-h-[100px] overflow-y-auto no-scrollbar flex-1 pb-4">
                                                             {displayCards.filter(c => c && (c.columnId === col.id || c.col === col.id)).map((card, idx) => (
-                                                                <dnd.Draggable key={card.id || card._id} draggableId={card.id || card._id} index={idx}>
+                                                                <dnd.Draggable key={card.id || card._id || `col-${idx}`} draggableId={card.id || card._id || `col-${idx}`} index={idx}>
                                                                     {(provided, snapshot) => (
                                                                         <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} onClick={() => setEditingCard(card)} className={`bg-white text-gray-800 border border-gray-100 rounded-2xl p-4 insta-shadow hover:shadow-xl transition-all duration-300 cursor-pointer group relative ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-2xl z-50' : 'hover:scale-[1.02]'}`}>
                                             <div className="flex justify-between items-start mb-3"><div className={`w-16 h-2 rounded-full ${ {low: 'bg-blue-300', med: 'bg-yellow-400', high: 'bg-red-500'}[card.urgency?.toLowerCase() || 'low'] }`}></div><div className="opacity-0 group-hover:opacity-100 flex gap-2 transition" onClick={e => e.stopPropagation()}><button onClick={async (e) => { e.stopPropagation(); await fetch(`/api/tasks/${card.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ archived: true, auditEvent: { user: user?.email || 'System', action: 'Archived card' } }) }); setCards(cards.map(c => c.id === card.id ? { ...c, archived: true } : c)); showToast('Card archived', 'success'); }} className="p-2 bg-gray-50 text-gray-400 hover:text-red-500 rounded-xl hover:bg-red-50"><window.Icon name="archive" size={14}/></button><button onClick={(e) => { e.stopPropagation(); moveCard(card.id, -1); }} className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100"><window.Icon name="arrow-left" size={14}/></button><button onClick={(e) => { e.stopPropagation(); moveCard(card.id, 1); }} className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100"><window.Icon name="arrow-right" size={14}/></button></div></div>
