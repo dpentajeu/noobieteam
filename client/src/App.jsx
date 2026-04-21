@@ -216,6 +216,136 @@ class ErrorBoundary extends React.Component {
     }
 }
 
+const React = window.React;
+
+window.PublicDocsView = ({ wsPath, folderName }) => {
+    const [docs, setDocs] = React.useState([]);
+    const [folder, setFolder] = React.useState(null);
+    const [workspace, setWorkspace] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState(null);
+    const [selectedDocId, setSelectedDocId] = React.useState(null);
+
+    React.useEffect(() => {
+        if (!wsPath || !folderName) {
+            setError("Invalid documentation URL format.");
+            setLoading(false);
+            return;
+        }
+
+        fetch(\`/api/public/docs/\${wsPath}/\${folderName}\`)
+            .then(r => {
+                if (!r.ok) throw new Error("Documentation not found or access denied.");
+                return r.json();
+            })
+            .then(data => {
+                setWorkspace(data.workspace);
+                setFolder(data.folder);
+                setDocs(data.docs);
+                if (data.docs && data.docs.length > 0) {
+                    setSelectedDocId(data.docs[0].id || data.docs[0]._id);
+                }
+            })
+            .catch(err => setError(err.message))
+            .finally(() => setLoading(false));
+    }, [wsPath, folderName]);
+
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500 font-bold">Loading API Documentation...</div>;
+    if (error) return <div className="min-h-screen flex items-center justify-center bg-red-50 text-red-500 font-black">{error}</div>;
+
+    const activeDoc = docs.find(d => (d.id === selectedDocId || d._id === selectedDocId));
+
+    return (
+        <div className="min-h-screen bg-white flex text-black font-sans">
+            {/* Sidebar */}
+            <div className="w-72 bg-gray-50 border-r border-gray-100 flex flex-col h-screen sticky top-0">
+                <div className="p-8 border-b border-gray-200">
+                    <h1 className="text-xl font-black tracking-tighter mb-2">{workspace?.name || 'Workspace'}</h1>
+                    <div className="flex items-center gap-2 text-gray-500">
+                        <window.Icon name="folder" size={14} />
+                        <span className="text-xs font-bold uppercase tracking-widest">{folder?.name || 'Documentation'}</span>
+                    </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                    {docs.map(doc => {
+                        const docId = doc.id || doc._id;
+                        return (
+                            <div key={docId} onClick={() => setSelectedDocId(docId)} className={\`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition \${selectedDocId === docId ? 'bg-white shadow-sm text-blue-600 font-bold border border-gray-200' : 'hover:bg-gray-100 text-gray-600 font-medium border border-transparent'}\`}>
+                                {doc.type === 'API' ? (
+                                    <span className={\`text-[9px] font-black w-10 text-center rounded px-1 py-0.5 \${doc.apiSpec?.method === 'POST' ? 'bg-emerald-100 text-emerald-700' : doc.apiSpec?.method === 'GET' ? 'bg-blue-100 text-blue-700' : doc.apiSpec?.method === 'PUT' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}\`}>{doc.apiSpec?.method}</span>
+                                ) : (
+                                    <window.Icon name="file-text" size={16} className={selectedDocId === docId ? 'text-blue-500' : 'text-gray-400'} />
+                                )}
+                                <span className="text-sm truncate">{doc.title || 'Untitled'}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                <header className="h-16 border-b border-gray-100 flex items-center px-10 bg-white">
+                    <h2 className="text-lg font-black tracking-tight">{activeDoc ? activeDoc.title : 'Select a document'}</h2>
+                </header>
+                <div className="flex-1 overflow-y-auto p-10 bg-white">
+                    {activeDoc ? (
+                        activeDoc.type === 'API' ? (
+                            <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+                                <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+                                    <span className={\`font-black px-3 py-1 rounded-lg text-xs \${activeDoc.apiSpec?.method === 'POST' ? 'bg-emerald-100 text-emerald-700' : activeDoc.apiSpec?.method === 'GET' ? 'bg-blue-100 text-blue-700' : activeDoc.apiSpec?.method === 'PUT' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}\`}>{activeDoc.apiSpec?.method}</span>
+                                    <code className="text-sm font-bold text-gray-800">{activeDoc.apiSpec?.url || 'No URL specified'}</code>
+                                </div>
+                                {activeDoc.content && (
+                                    <div className="prose max-w-none text-sm" dangerouslySetInnerHTML={{__html: activeDoc.content}}></div>
+                                )}
+                                {activeDoc.apiSpec?.headers?.length > 0 && (
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4">Headers</h3>
+                                        <table className="w-full text-left text-sm border-collapse">
+                                            <thead><tr className="border-b-2 border-gray-100"><th className="pb-2 font-bold w-1/3">Key</th><th className="pb-2 font-bold">Value</th></tr></thead>
+                                            <tbody>
+                                                {activeDoc.apiSpec.headers.map((h, i) => (
+                                                    <tr key={i} className="border-b border-gray-50"><td className="py-3 font-mono text-gray-600">{h.key}</td><td className="py-3 font-mono text-gray-800">{h.value}</td></tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                                {activeDoc.apiSpec?.queryParams?.length > 0 && (
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4">Query Parameters</h3>
+                                        <table className="w-full text-left text-sm border-collapse">
+                                            <thead><tr className="border-b-2 border-gray-100"><th className="pb-2 font-bold w-1/3">Key</th><th className="pb-2 font-bold">Value</th></tr></thead>
+                                            <tbody>
+                                                {activeDoc.apiSpec.queryParams.map((q, i) => (
+                                                    <tr key={i} className="border-b border-gray-50"><td className="py-3 font-mono text-gray-600">{q.key}</td><td className="py-3 font-mono text-gray-800">{q.value}</td></tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                                {activeDoc.apiSpec?.body && (
+                                    <div>
+                                        <h3 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4">Request Body</h3>
+                                        <pre className="p-4 bg-gray-900 text-gray-100 rounded-2xl text-xs overflow-x-auto font-mono"><code>{activeDoc.apiSpec.body}</code></pre>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="max-w-4xl mx-auto">
+                                <div className="ql-editor prose max-w-none" dangerouslySetInnerHTML={{__html: activeDoc.content}}></div>
+                            </div>
+                        )
+                    ) : (
+                        <div className="text-center py-20 text-gray-400 text-sm font-bold">No content available.</div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 window.Main = () => {
     const [user, setUser] = React.useState(() => window.safeParse('nt_user', null));
     const [ws, setWs] = React.useState(null);

@@ -2,7 +2,7 @@ const crypto = require('crypto');
 
 const express = require('express');
 const router = express.Router();
-const { User, Workspace, Task, Doc, Env, EmojiEvent } = require('../db');
+const { User, Workspace, Task, Doc, Folder, Env, EmojiEvent } = require('../db');
 
 // --- Workspaces ---
 router.get('/workspaces', async (req, res) => {
@@ -239,6 +239,46 @@ router.put('/users/:email', async (req, res) => {
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+
+// --- Folders ---
+router.get('/workspaces/:wsId/folders', async (req, res) => {
+  try {
+    const folders = await Folder.find({ workspaceId: req.params.wsId });
+    res.json(folders);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/workspaces/:wsId/folders', async (req, res) => {
+  try {
+    const folder = new Folder({ ...req.body, workspaceId: req.params.wsId });
+    await folder.save();
+    res.json(folder);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.put('/folders/:id', async (req, res) => {
+  try {
+    const folder = await Folder.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(folder);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.delete('/folders/:id', async (req, res) => {
+  try {
+    await Folder.findByIdAndDelete(req.params.id);
+    await Doc.updateMany({ folderId: req.params.id }, { $unset: { folderId: 1 } });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.get('/workspaces/:wsId/docs', async (req, res) => {
   try {
     const docs = await Doc.find({ workspaceId: req.params.wsId });
@@ -347,6 +387,25 @@ router.post('/admin/users/:email/reset-pin', async (req, res) => {
         const user = await User.findOneAndUpdate({ email: req.params.email }, { vaultPin: null }, { new: true });
         res.json({ success: true, user });
     } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+
+// --- Public Docs ---
+router.get('/public/docs/:wsId/:folderSlug', async (req, res) => {
+  try {
+    const workspace = await Workspace.findById(req.params.wsId);
+    if (!workspace) return res.status(404).json({ error: 'Workspace not found' });
+    
+    // Find folder by slug or ID
+    const folder = await Folder.findOne({ $or: [{ slug: req.params.folderSlug }, { _id: req.params.folderSlug }], workspaceId: req.params.wsId });
+    if (!folder) return res.status(404).json({ error: 'Folder not found' });
+    
+    const docs = await Doc.find({ workspaceId: req.params.wsId, folderId: folder._id }).sort({ order: 1, createdAt: 1 });
+    
+    res.json({ workspace: { id: workspace._id, name: workspace.name }, folder: { id: folder._id, name: folder.name, slug: folder.slug }, docs });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 module.exports = router;

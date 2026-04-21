@@ -22,3 +22,15 @@
   1. Defined the UX flow in the left sidebar for creating and managing folders, including drag-and-drop support for docs/APIs.
   2. Specified the layout for the new `/[workspace-path]/docs/[folder-name]` dynamic page. It strips out editing tools and presents a clean, Postman/GitBook-style read-only interface for external or team-wide consumption.
 - **Outcome:** The PRD is fully updated with the expansion blueprints. Handed off to the Programmer and CTO for implementation.
+
+## 2026-04-21 Database Architecture Extension (CTO)
+- **Project:** Noobieteam
+- **Task:** Extend `server/db.js` with a new `Folder` schema and implement dynamic routing support for the upcoming Postman-style public documentation pages.
+- **Status:** Completed.
+- **Outcome:** I introduced a new Mongoose model (`Folder`) and linked it relationally to the existing `Doc` schema via an optional `folderId` property. This allows users to drag-and-drop both API specs and Text docs into searchable groups. I also patched `server/index.js` to catch `/docs/*` routes and redirect them safely to the React frontend, where `App.jsx` intercepts the URL string (`/docs/:workspacePath/:folderName`) and dynamically mounts the upcoming `<window.PublicDocsView>` component, completely bypassing the Kanban workspace authentication loop. These architecture changes are explicitly documented in the new `README_DB_UPDATE.md` file.
+
+## 2026-04-21 Frontend Re-Compilation & Environment Reset (CTO)
+- **Project:** Noobieteam
+- **Task:** Verify the frontend logic after the Programmer's updates to `DocTab.jsx` and ensure no corrupted `.vite` cache causes workspace crashes.
+- **Status:** Completed.
+- **Outcome:** I forcefully wiped any residual `node_modules/.cache` and `node_modules/.vite` artifacts to guarantee that the `window.PublicDocsView` component (which handles dynamic read-only postman pages) binds cleanly to the `App.jsx` router. The server was cleanly spun down and rebooted on dynamic port 9501. The Kanban workspace, the Vault, and the new Documentation Module tab (complete with hierarchical folder support) load effortlessly without any React explosions.
