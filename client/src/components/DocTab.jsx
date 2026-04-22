@@ -69,6 +69,7 @@ window.DocTab = ({ workspaceId, user }) => {
     const [apiTab, setApiTab] = React.useState('Body');
     const [apiResponse, setApiResponse] = React.useState(null);
     const [isApiLoading, setIsApiLoading] = React.useState(false);
+    const { t } = window.useTranslation();
 
     const handleSendRequest = async (doc) => {
         setIsApiLoading(true);
@@ -259,7 +260,7 @@ window.DocTab = ({ workspaceId, user }) => {
                                                 <div key={docId} onClick={() => { setSelectedDocId(docId); setShowMobileSidebar(false); }} className={`group flex items-center justify-between p-2 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50 text-gray-600'}`}>
                                                     <div className="flex items-center gap-2 truncate">
                                                         <window.Icon name={doc.type === 'API' ? "zap" : "file-text"} size={14} className={selectedDocId === docId ? 'text-blue-500' : 'text-gray-400'} />
-                                                        <span className="text-xs font-bold truncate">{doc.title || 'Untitled'}</span>
+                                                        <span className="text-xs font-bold truncate">{doc.title || t('labels.untitled')}</span>
                                                     </div>
                                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
                                                         <button onClick={(e) => { e.stopPropagation(); moveToFolder(docId, null); }} className="p-1 text-gray-400 hover:text-gray-600" title="Move to Root"><window.Icon name="log-out" size={12} /></button>
@@ -268,7 +269,7 @@ window.DocTab = ({ workspaceId, user }) => {
                                                 </div>
                                             );
                                         })}
-                                        {folderDocs.length === 0 && <div className="p-2 text-[10px] text-gray-400 italic">Empty</div>}
+                                        {folderDocs.length === 0 && <div className="p-2 text-[10px] text-gray-400 italic">{t('labels.empty')}</div>}
                                     </div>
                                 )}
                             </div>
@@ -276,7 +277,7 @@ window.DocTab = ({ workspaceId, user }) => {
                     })}
 
                     <div className="mt-4 pt-4 border-t border-gray-100">
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 px-2">Root Documents</p>
+                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 px-2">{t('labels.root_documents')}</p>
                     {docs.filter(d => !d.folderId).map(doc => {
                         const docId = doc.id || doc._id;
                         return (
@@ -316,7 +317,7 @@ window.DocTab = ({ workspaceId, user }) => {
                                     value={activeDoc.folderId || ''}
                                     onChange={e => moveToFolder(activeDoc.id || activeDoc._id, e.target.value || null)}
                                 >
-                                    <option value="">No Folder (Root)</option>
+                                    <option value="">{t('labels.no_folder_root')}</option>
                                     {folders.map(f => <option key={f.id || f._id} value={f.id || f._id}>{f.name}</option>)}
                                 </select>
                                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{activeDoc.type} Spec</span>
@@ -330,7 +331,7 @@ window.DocTab = ({ workspaceId, user }) => {
                                 <div className="max-w-4xl mx-auto flex flex-col h-full">
                                     <div className="flex justify-end mb-4">
                                         <button onClick={() => setIsDocEditing(!isDocEditing)} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition ${isDocEditing ? 'bg-red-50 text-red-500 border border-red-100 hover:bg-red-100' : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'}`}>
-                                            {isDocEditing ? "Done Editing" : "Edit Document"}
+                                            {isDocEditing ? t('actions.done_editing') : t('actions.edit_document')}
                                         </button>
                                     </div>
                                     <window.ModernDocEditor key={activeDoc.id || activeDoc._id} initialContent={activeDoc.content} editable={isDocEditing} onChange={(jsonStr) => updateDoc(activeDoc.id || activeDoc._id, { content: jsonStr })} />
@@ -411,8 +412,8 @@ window.DocTab = ({ workspaceId, user }) => {
                                                 <span className="text-gray-400">Response</span>
                                                 {apiResponse && (
                                                     <div className="flex gap-4">
-                                                        <span className={apiResponse.status === 200 || apiResponse.status === 201 ? 'text-emerald-400' : 'text-red-400'}>{t('labels.status') || 'Status'}: {apiResponse.status} {apiResponse.statusText}</span>
-                                                        <span className="text-blue-400">{t('labels.time') || 'Time'}: {apiResponse.time}ms</span>
+                                                        <span className={apiResponse.status === 200 || apiResponse.status === 201 ? 'text-emerald-400' : 'text-red-400'}>{t('labels.status')}: {apiResponse.status} {apiResponse.statusText}</span>
+                                                        <span className="text-blue-400">{t('labels.time')}: {apiResponse.time}ms</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -420,7 +421,7 @@ window.DocTab = ({ workspaceId, user }) => {
                                                 {isApiLoading ? (
                                                     <div className="flex items-center justify-center h-full gap-4 text-blue-400 animate-pulse">
                                                         <window.Icon name="loader" size={24} className="animate-spin" />
-                                                        <span>Sending Request...</span>
+                                                        <span>{t('actions.sending')}</span>
                                                     </div>
                                                 ) : apiResponse ? (
                                                     <pre>{typeof apiResponse.data === 'object' ? JSON.stringify(apiResponse.data, null, 2) : apiResponse.data}</pre>
@@ -437,7 +438,7 @@ window.DocTab = ({ workspaceId, user }) => {
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-gray-400 h-full bg-[#FAFAFA]">
                         <window.Icon name="book-open" size={64} className="mb-6 opacity-20" />
-                        <h3 className="text-xl font-black tracking-tight text-gray-500">No Document Selected</h3>
+                        <h3 className="text-xl font-black tracking-tight text-gray-500">{t('labels.no_document_selected')}</h3>
                         <p className="text-sm font-medium mt-2">Select a document from the sidebar or create a new one.</p>
                     </div>
                 )}

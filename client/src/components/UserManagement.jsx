@@ -3,6 +3,7 @@ window.UserManagement = ({ user, adminEmail, onClose }) => {
     const [loading, setLoading] = React.useState(true);
     const { showToast } = window.useToasts();
     const { showConfirm } = window.useModals();
+    const { t } = window.useTranslation ? window.useTranslation() : { t: k => k };
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -17,11 +18,11 @@ window.UserManagement = ({ user, adminEmail, onClose }) => {
     React.useEffect(() => { fetchUsers(); }, []);
 
     const resetPin = async (email) => {
-        showConfirm("Reset Vault PIN", `Reset Master Vault PIN for ${email}? They will be required to create a new one on their next login.`, async () => {
+        showConfirm(t('actions.reset_vault_pin') || "Reset Vault PIN", t('alerts.confirm_reset_pin', { email }) || `Reset Master Vault PIN for ${email}? They will be required to create a new one on their next login.`, async () => {
             try {
                 const res = await fetch(`/api/admin/users/${email}/reset-pin`, { method: 'POST' });
                 if (res.ok) {
-                    showToast(`Vault PIN reset for ${email}.`);
+                    showToast(t('alerts.vault_pin_reset', { email }) || `Vault PIN reset for ${email}.`);
                     fetchUsers();
                 }
             } catch (e) { console.error(e); }
@@ -30,11 +31,11 @@ window.UserManagement = ({ user, adminEmail, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[9999] flex items-center justify-center p-4 animate-fade-in text-black">
-            <div className="max-w-4xl w-full bg-white rounded-[2.5rem] shadow-2xl flex flex-col max-h-[80vh] overflow-hidden border border-gray-100">
+            <div className="max-w-4xl w-full bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 flex flex-col max-h-[80vh] overflow-hidden">
                 <header className="p-8 border-b border-gray-50 flex justify-between items-center">
                     <div>
-                        <h2 className="text-3xl font-black tracking-tighter italic">User Management</h2>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Platform Administrative Terminal</p>
+                        <h2 className="text-3xl font-black tracking-tighter italic">{t('labels.user_management')}</h2>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">{t('labels.platform_admin_terminal')}</p>
                     </div>
                     <button onClick={onClose} className="p-4 bg-gray-50 hover:bg-gray-100 rounded-full transition"><window.Icon name="x" size={24}/></button>
                 </header>
@@ -49,11 +50,11 @@ window.UserManagement = ({ user, adminEmail, onClose }) => {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-50">
-                                        <th className="pb-4 px-4 font-black">User Identity</th>
-                                        <th className="pb-4 px-4 font-black">Enlisted Date</th>
-                                        <th className="pb-4 px-4 font-black">Last Active</th>
-                                        <th className="pb-4 px-4 font-black">Vault Status</th>
-                                        <th className="pb-4 px-4 text-right font-black">Actions</th>
+                                        <th className="pb-4 px-4 font-black">{t('labels.user_identity')}</th>
+                                        <th className="pb-4 px-4 font-black">{t('labels.enlisted_date')}</th>
+                                        <th className="pb-4 px-4 font-black">{t('labels.last_active')}</th>
+                                        <th className="pb-4 px-4 font-black">{t('labels.vault_status')}</th>
+                                        <th className="pb-4 px-4 text-right font-black">{t('labels.actions_col')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
@@ -76,13 +77,13 @@ window.UserManagement = ({ user, adminEmail, onClose }) => {
                                             </td>
                                             <td className="py-5 px-4">
                                                 {u.vaultPin ? (
-                                                    <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[8px] font-black uppercase tracking-widest">Locked 🔐</span>
+                                                    <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-[8px] font-black uppercase tracking-widest">{t('labels.locked')}</span>
                                                 ) : (
-                                                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-[8px] font-black uppercase tracking-widest">Unsecured 🔓</span>
+                                                    <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-[8px] font-black uppercase tracking-widest">{t('labels.unsecured')}</span>
                                                 )}
                                             </td>
                                             <td className="py-5 px-4 text-right">
-                                                <button onClick={() => resetPin(u.email)} className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition opacity-0 group-hover:opacity-100 shadow-sm" title="Reset Vault PIN">
+                                                <button onClick={() => resetPin(u.email)} className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition opacity-0 group-hover:opacity-100 shadow-sm" title={t('actions.reset_vault_pin') || "Reset Vault PIN"}>
                                                     <window.Icon name="refresh-cw" size={16} />
                                                 </button>
                                             </td>

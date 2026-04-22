@@ -1,7 +1,7 @@
 window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdateUser }) => {
             const { showPrompt, showConfirm } = window.useModals();
             const { showToast } = window.useToasts();
-    const { t } = window.useTranslation();
+            const { t } = window.useTranslation ? window.useTranslation() : { t: k => k };
             const [workspaces, setWorkspaces] = React.useState([]);
             const [loading, setLoading] = React.useState(true);
             const [pinPrompt, setPinPrompt] = React.useState({ isOpen: false, pin: '', confirm: '' });
@@ -16,8 +16,8 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
 
             const handleCreatePin = async (e) => {
                 if (e && e.preventDefault) e.preventDefault();
-                if (pinPrompt.pin !== pinPrompt.confirm) return setPinError('PINs do not match.');
-                if (pinPrompt.pin.length < 6) return setPinError('PIN must be at least 6 characters.');
+                if (pinPrompt.pin !== pinPrompt.confirm) return setPinError(t('alerts.pins_do_not_match'));
+                if (pinPrompt.pin.length < 6) return setPinError(t('alerts.pin_min_length'));
                 setPinLoading(true);
                 try {
                     const userEmail = user?.email;
@@ -36,7 +36,7 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
                     
                     const updatedUser = Object.assign({}, user || {}, { vaultPin: data.vaultPin });
                     onUpdateUser(updatedUser);
-                    showToast('Master Vault PIN created successfully. 🔐');
+                    showToast(t('alerts.payload_secured') || 'Master Vault PIN created successfully. 🔐');
                     setPinPrompt({ isOpen: false, pin: '', confirm: '' });
                 } catch (err) {
                     setPinError(err.message);
@@ -64,29 +64,29 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
             React.useEffect(() => { localStorage.setItem('nt_workspaces', JSON.stringify(workspaces)); }, [workspaces]);
 
             const addWS = () => {
-                showPrompt('New Workspace', 'Enter workspace name:', async (name) => {
+                showPrompt(t('actions.new_workspace') || 'New Workspace', t('labels.enter_workspace_name') || 'Enter workspace name:', async (name) => {
                     if (!name) return;
                     const newWs = { name, color: 'from-blue-400 to-indigo-500', avatar: name.substring(0,2).toUpperCase(), archived: false, members: [{ userId: user?.email, role: 'OWNER' }] };
                     const res = await fetch('/api/workspaces', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(newWs) });
                     const saved = await res.json();
                     setWorkspaces(prev => [...prev, saved]);
-                    showToast("New mission workspace initialized! ✨");
+                    showToast(t('alerts.workspace_initialized') || "New mission workspace initialized! ✨");
                 }, false);
             };
 
             const toggleArchive = async (e, id, archive) => {
                 e.stopPropagation();
                 if (!archive) {
-                    showConfirm("Archive Workspace", "Are you sure you want to archive this workspace?", async () => {
+                    showConfirm(t('actions.archive_workspace') || "Archive Workspace", t('alerts.confirm_archive_workspace') || "Are you sure you want to archive this workspace?", async () => {
                         await fetch(`/api/workspaces/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ archived: true }) });
                         setWorkspaces(prev => prev.map(w => w.id === id ? { ...w, archived: true } : w));
-                        showToast("Workspace archived. 📦");
+                        showToast(t('alerts.workspace_archived') || "Workspace archived. 📦");
                     });
                 } else {
                     if (!isAdmin) return;
                     await fetch(`/api/workspaces/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ archived: false }) });
                     setWorkspaces(prev => prev.map(w => w.id === id ? { ...w, archived: false } : w));
-                    showToast("Workspace reactivated. 🚀");
+                    showToast(t('alerts.workspace_reactivated') || "Workspace reactivated. 🚀");
                 }
             };
 
@@ -110,13 +110,13 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[9999] flex items-center justify-center p-4 animate-fade-in">
                     <div className="max-w-[320px] w-[95%] mx-auto bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl text-center">
                         <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6"><window.Icon name="shield-alert" size={32} className="text-blue-500" /></div>
-                        <h2 className="text-2xl font-black italic tracking-tighter mb-2">Vault Security</h2>
-                        <p className="text-[10px] text-gray-500 mb-6">You must create a Master PIN to securely encrypt your Vault secrets. Minimum 6 characters.</p>
+                        <h2 className="text-2xl font-black italic tracking-tighter mb-2">{t('labels.vault_security')}</h2>
+                        <p className="text-[10px] text-gray-500 mb-6">{t('alerts.master_pin_requirement')}</p>
                         <div className="space-y-4">
-                            <input className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 text-black font-black" type="password" placeholder="Enter PIN" autoFocus required value={pinPrompt.pin} onChange={e => { setPinPrompt(p => ({ ...p, pin: e.target.value })); setPinError(''); }} onKeyDown={e => e.key === 'Enter' && handleCreatePin(e)} />
-                            <input className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 text-black font-black" type="password" placeholder="Confirm PIN" required value={pinPrompt.confirm} onChange={e => { setPinPrompt(p => ({ ...p, confirm: e.target.value })); setPinError(''); }} onKeyDown={e => e.key === 'Enter' && handleCreatePin(e)} />
+                            <input className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 text-black font-black" type="password" placeholder={t('labels.enter_pin')} autoFocus required value={pinPrompt.pin} onChange={e => { setPinPrompt(p => ({ ...p, pin: e.target.value })); setPinError(''); }} onKeyDown={e => e.key === 'Enter' && handleCreatePin(e)} />
+                            <input className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 text-black font-black" type="password" placeholder={t('labels.confirm_pin')} required value={pinPrompt.confirm} onChange={e => { setPinPrompt(p => ({ ...p, confirm: e.target.value })); setPinError(''); }} onKeyDown={e => e.key === 'Enter' && handleCreatePin(e)} />
                             <button type="button" onClick={(e) => handleCreatePin(e)} disabled={pinLoading} className="w-full py-3 bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-100 hover:scale-105 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                                {pinLoading && <window.Icon name="loader" size={14} className="animate-spin" />} Create Vault PIN
+                                {pinLoading && <window.Icon name="loader" size={14} className="animate-spin" />} {t('actions.create_vault_pin')}
                             </button>
                             {pinError && <p className="text-red-500 text-[10px] font-bold animate-shake">{pinError}</p>}
                         </div>
@@ -128,7 +128,7 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
                             <h1 className={`text-xl font-black italic tracking-tighter ${isDarkHeader ? 'text-white' : 'text-black'}`}>{t('app_name')}</h1>
                             {isAdmin && (
                                 <button onClick={() => setShowUserManagement(true)} className={`text-[10px] font-black uppercase tracking-widest transition hover:opacity-70 flex items-center gap-2 ${isDarkHeader ? 'text-white/80' : 'text-gray-500'}`}>
-                                    <window.Icon name="users" size={14} /> User Management
+                                    <window.Icon name="users" size={14} /> {t('labels.user_management')}
                                 </button>
                             )}
                         </div>
@@ -138,8 +138,8 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
                     <div className="max-w-5xl mx-auto p-4 md:p-10 flex-1">
                         <header className="mb-8 md:mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
                             <div>
-                                <h2 className="text-3xl md:text-5xl font-black tracking-tighter">{viewArchived ? t('labels.secured_archive') || 'Archive' : t('labels.workspace') + 's'}</h2>
-                                <p className="text-gray-400 mt-2 font-bold uppercase tracking-[0.2em] text-[10px]">Project Command Hub</p>
+                                <h2 className="text-3xl md:text-5xl font-black tracking-tighter">{viewArchived ? t('actions.archive_workspace') : t('labels.workspace') + 's'}</h2>
+                                <p className="text-gray-400 mt-2 font-bold uppercase tracking-[0.2em] text-[10px]">{t('labels.project_command_hub') || "Project Command Hub"}</p>
                             </div>
                             <div className="flex gap-4">
                                 {isAdmin && (
@@ -157,21 +157,21 @@ window.WorkspaceHub = ({ onSelect, onLogout, user, theme, onThemeChange, onUpdat
                                 <div key={wsId} onClick={() => onSelect(ws)} className="cursor-pointer bg-white border border-gray-100 rounded-[2rem] p-8 insta-shadow hover:shadow-xl hover:scale-[1.03] transition-all duration-300 group relative">
                                     <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${ws.color} mb-6 flex items-center justify-center text-white font-black text-xl shadow-lg group-hover:rotate-6 transition-transform`}>{ws.avatar}</div>
                                     <h3 className="text-xl font-black text-black tracking-tight">{ws.name}</h3>
-                                    <p className="text-[9px] text-gray-400 font-black uppercase tracking-[0.2em] mt-4">{ws.createdAt ? 'Created ' + ws.createdAt : 'Created N/A'}</p>
+                                    <p className="text-[9px] text-gray-400 font-black uppercase tracking-[0.2em] mt-4">{ws.createdAt ? t('labels.created_at', {date: new Date(ws.createdAt).toLocaleDateString()}) : t('labels.created_at', {date: 'N/A'})}</p>
                                     {isAdmin && (
                                         <button onClick={(e) => toggleArchive(e, wsId, ws.archived)} className="absolute top-8 right-8 p-2 text-gray-200 hover:text-gray-400 transition opacity-0 group-hover:opacity-100">
                                             <window.Icon name={ws.archived ? "rotate-ccw" : "archive"} size={18} />
                                         </button>
                                     )}
                                     {isAdmin ? (
-                                        <button onClick={(e) => { e.stopPropagation(); showConfirm("Destroy Workspace", "PERMANENTLY delete this workspace?", async () => { await fetch(`/api/workspaces/${wsId}`, { method: "DELETE", headers: { "user-email": user?.email } }); setWorkspaces(prev => prev.filter(w => (w.id !== wsId && w._id !== wsId))); showToast("Workspace destroyed."); }); }} className="absolute bottom-8 right-8 p-2 text-red-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100">
+                                        <button onClick={(e) => { e.stopPropagation(); showConfirm(t('actions.destroy_workspace') || "Destroy Workspace", t('alerts.confirm_destroy_workspace') || "PERMANENTLY delete this workspace?", async () => { await fetch(`/api/workspaces/${wsId}`, { method: "DELETE", headers: { "user-email": user?.email } }); setWorkspaces(prev => prev.filter(w => (w.id !== wsId && w._id !== wsId))); showToast(t('alerts.workspace_destroyed') || "Workspace destroyed."); }); }} className="absolute bottom-8 right-8 p-2 text-red-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100">
                                             <window.Icon name="trash-2" size={18} />
                                         </button>
                                     ) : null}
                                 </div>
                                 );
                             })}
-                            {displayWorkspaces.length === 0 && <div className="col-span-full py-20 text-center text-gray-300 italic text-sm">No {viewArchived ? 'archived' : 'active'} workspaces found.</div>}
+                            {displayWorkspaces.length === 0 && <div className="col-span-full py-20 text-center text-gray-300 italic text-sm">{t('labels.no_active_workspaces')}</div>}
                         </div>
                     </div>
                 </div>

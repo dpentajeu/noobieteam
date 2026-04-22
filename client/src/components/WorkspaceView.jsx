@@ -1,7 +1,6 @@
 window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, theme, onUpdateUser, isJukeboxActive }) => {
     const { showConfirm, showPrompt, showAlert } = window.useModals();
     const { showToast } = window.useToasts();
-    const { t } = window.useTranslation();
     const [columns, setColumns] = React.useState(workspace.columns && workspace.columns.length > 0 ? workspace.columns : [{ id: 'todo', title: 'To Do', order: 0 }]);
     const [cards, setCards] = React.useState([]);
     const [allUsers, setAllUsers] = React.useState([]);
@@ -13,6 +12,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
     const [expiredCards, setExpiredCards] = React.useState([]);
     const [showExpiredModal, setShowExpiredModal] = React.useState(false);
     const [selectedMoveCol, setSelectedMoveCol] = React.useState('');
+    const { t } = window.useTranslation ? window.useTranslation() : { t: k => k };
 
     React.useEffect(() => {
         fetch(`/api/workspaces/${workspace.id}/tasks`).then(r => r.json()).then(data => { 
@@ -101,7 +101,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
     
     // Safety check for Drag and Drop library
     const dnd = window.ReactBeautifulDnd;
-    const [aiMessages, setAiMessages] = React.useState([{ role: 'bot', content: "Hello! I am NoobieHelper. I can help you manage your Kanban board via natural language. How can I assist today?" }]);
+    const [aiMessages, setAiMessages] = React.useState([{ role: 'bot', content: t('alerts.ai_welcome') || "Hello! I am NoobieHelper. I can help you manage your Kanban board via natural language. How can I assist today?" }]);
     const [aiInput, setAiInput] = React.useState('');
     const [showEmojiPicker, setShowEmojiPicker] = React.useState(false);
     const [footerQuote, setFooterQuote] = React.useState(null);
@@ -451,9 +451,9 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
         return (
             <div className="min-h-screen flex items-center justify-center bg-yellow-50 p-10">
                 <div className="max-w-md bg-white p-8 rounded-3xl shadow-xl text-center">
-                    <h2 className="text-xl font-black text-yellow-600 mb-4">Library Load Error</h2>
+                    <h2 className="text-xl font-black text-yellow-600 mb-4">{t('alerts.library_load_error')}</h2>
                     <p className="text-sm text-gray-500 mb-6">The Drag and Drop engine (ReactBeautifulDnd) failed to initialize. This usually happens due to a slow network connection to the CDN.</p>
-                    <button onClick={() => window.location.reload()} className="px-6 py-2 bg-yellow-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest">Retry Connection</button>
+                    <button onClick={() => window.location.reload()} className="px-6 py-2 bg-yellow-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest">{t('actions.retry_connection')}</button>
                 </div>
             </div>
         );
@@ -463,11 +463,11 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
         <div className="min-h-screen flex flex-col bg-white overflow-hidden text-black">
             <nav className={`h-16 px-6 flex items-center justify-between sticky top-0 z-[120] transition-colors duration-500 shadow-sm ${headerClass}`}>
                 <div className="flex items-center gap-6">
-                    <button onClick={() => showConfirm('Exit Workspace', 'Are you sure you want to return to the workspace selection hub?', onBack)} className={`p-2.5 hover:bg-black/5 rounded-xl transition ${isDarkHeader ? 'text-white' : 'text-black'}`}><window.Icon name="arrow-left" size={20}/></button>
+                    <button onClick={() => showConfirm(t('actions.exit_workspace') || 'Exit Workspace', t('alerts.confirm_exit_workspace') || 'Are you sure you want to return to the workspace selection hub?', onBack)} className={`p-2.5 hover:bg-black/5 rounded-xl transition ${isDarkHeader ? 'text-white' : 'text-black'}`}><window.Icon name="arrow-left" size={20}/></button>
                     <div className={`leading-none ${isDarkHeader ? 'text-white' : 'text-black'}`}><h2 className="text-lg font-black tracking-tighter italic mr-4">{t('app_name')}</h2><p className="text-[8px] font-black uppercase tracking-[0.4em] opacity-50 mt-1.5">{workspace.name}</p></div>
                     {isAdmin && (
                         <button onClick={() => setShowUserManagement(true)} className={`text-[10px] font-black uppercase tracking-widest transition hover:opacity-70 flex items-center gap-2 ${isDarkHeader ? 'text-white/80' : 'text-gray-500'}`}>
-                            <window.Icon name="users" size={14} /> User Management
+                            <window.Icon name="users" size={14} /> {t('labels.user_management')}
                         </button>
                     )}
                 </div>
@@ -483,10 +483,10 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                         {showMemberDropdown && (
                             <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 z-[150] animate-pop text-black">
                                 <div className="flex justify-between items-center mb-3 px-1">
-                                    <p className="text-xs font-black uppercase tracking-widest text-gray-400">Board Members</p>
+                                    <p className="text-xs font-black uppercase tracking-widest text-gray-400">{t('labels.board_members')}</p>
                                     <div className="flex gap-2">
-                                        <button onClick={(e) => { e.stopPropagation(); showConfirm('Leave Workspace', 'Detach yourself from this workspace?', async () => { const newMembers = members.filter(m => m !== user?.email); setMembers(newMembers); await fetch(`/api/workspaces/${workspace.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ members: newMembers.map(u => ({userId: u, role: 'MEMBER'})) }) }); setTimeout(onBack, 100); }); }} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition" title="Leave Workspace"><window.Icon name="user-minus" size={14}/></button>
-                                        <button onClick={(e) => { e.stopPropagation(); showPrompt('Invite User', 'Email:', async (email) => { if(email) { const newMembers = [...members, email]; setMembers(newMembers); await fetch(`/api/workspaces/${workspace.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ members: newMembers.map(u => ({userId: u, role: 'MEMBER'})) }) }); } }); }} className="p-1.5 hover:bg-blue-50 text-blue-500 rounded-lg transition"><window.Icon name="user-plus" size={14}/></button>
+                                        <button onClick={(e) => { e.stopPropagation(); showConfirm(t('labels.leave_workspace_title'), t('alerts.confirm_detach_workspace'), async () => { const newMembers = members.filter(m => m !== user?.email); setMembers(newMembers); await fetch(`/api/workspaces/${workspace.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ members: newMembers.map(u => ({userId: u, role: 'MEMBER'})) }) }); setTimeout(onBack, 100); }); }} className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition" title={t('actions.leave_workspace')}><window.Icon name="user-minus" size={14}/></button>
+                                        <button onClick={(e) => { e.stopPropagation(); showPrompt(t('labels.invite_user_title'), t('labels.user_email'), async (email) => { if(email) { const newMembers = [...members, email]; setMembers(newMembers); await fetch(`/api/workspaces/${workspace.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ members: newMembers.map(u => ({userId: u, role: 'MEMBER'})) }) }); } }); }} className="p-1.5 hover:bg-blue-50 text-blue-500 rounded-lg transition" title={t('actions.invite_user')}><window.Icon name="user-plus" size={14}/></button>
                                     </div>
                                 </div>
                                 <div className="space-y-1.5 max-h-56 overflow-y-auto no-scrollbar">
@@ -523,20 +523,20 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                             <div className="flex items-center gap-3 bg-gray-50/80 p-1.5 rounded-2xl border border-gray-100 flex-shrink-0">
                                 <div className="relative">
                                     <window.Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    <input className="pl-8 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-[10px] font-bold outline-none focus:border-blue-500 w-32 lg:w-48" placeholder="Filter..." value={filterKeyword} onChange={e => setFilterKeyword(e.target.value)} />
+                                    <input className="pl-8 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-[10px] font-bold outline-none focus:border-blue-500 w-32 lg:w-48" placeholder={t('labels.search_placeholder')} value={filterKeyword} onChange={e => setFilterKeyword(e.target.value)} />
                                 </div>
                                 <select className="bg-white text-[10px] font-bold px-3 py-1.5 rounded-xl border border-gray-200 outline-none cursor-pointer text-gray-600" value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)}>
-                                    <option value="">All Members</option>
+                                    <option value="">{t('labels.all_members')}</option>
                                     {members.filter(m => m && typeof m === 'string').map(m => <option key={m} value={m}>{m.split('@')[0]}</option>)}
                                 </select>
-                                <button onClick={() => setFilterExpiring(!filterExpiring)} className={`p-2 rounded-xl border transition ${filterExpiring ? 'bg-red-500 border-red-500 text-white shadow-lg' : 'bg-white border-gray-200 text-gray-400 hover:text-red-500'}`} title="Expiring Soon">
+                                <button onClick={() => setFilterExpiring(!filterExpiring)} className={`p-2 rounded-xl border transition ${filterExpiring ? 'bg-red-500 border-red-500 text-white shadow-lg' : 'bg-white border-gray-200 text-gray-400 hover:text-red-500'}`} title={t('labels.expiring_soon')}>
                                     <window.Icon name="clock" size={14} />
                                 </button>
                             </div>
                         </div>
                         <div className="flex gap-2">
                             <button onClick={() => setShowBacklog(!showBacklog)} className={`px-6 py-4 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition flex items-center gap-2 ${showBacklog ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-700 border border-gray-200'}`}><window.Icon name="list" size={14} /> {t('actions.backlog')}</button>
-                            <button onClick={() => showPrompt(t('actions.new_stage'), 'Stage name:', async (name) => { if(name) { const newCols = [...columns, { id: window.generateId('col'), title: name }]; await fetch(`/api/workspaces/${workspace.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ columns: newCols }) }); setColumns(newCols); } })} className="bg-black text-white px-8 py-4 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition flex-shrink-0">{t('actions.new_stage')}</button>
+                            <button onClick={() => showPrompt(t('actions.new_stage'), t('labels.stage_name'), async (name) => { if(name) { const newCols = [...columns, { id: window.generateId('col'), title: name }]; await fetch(`/api/workspaces/${workspace.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ columns: newCols }) }); setColumns(newCols); } })} className="bg-black text-white px-8 py-4 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition flex-shrink-0">{t('actions.new_stage')}</button>
                         </div>
                     </header>
                     <dnd.DragDropContext onDragEnd={async (result) => {
@@ -577,7 +577,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                 <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-100/50 rounded-t-[2rem]">
                                     <h3 className="text-sm font-black uppercase tracking-widest text-gray-700 flex items-center gap-2">
                                         <window.Icon name="list" size={16} className="text-gray-500" />
-                                        Backlog
+                                        {t('actions.backlog')}
                                     </h3>
                                     <div className="flex gap-1 opacity-50 hover:opacity-100 transition">
                                         <button onClick={() => setShowBacklog(false)} className="p-1 hover:bg-gray-200 rounded"><window.Icon name="x" size={14}/></button>
@@ -593,7 +593,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                                             <div className="flex flex-col gap-1 overflow-hidden pr-2">
                                                                 <span className="font-bold text-xs text-gray-800 truncate">{card.title}</span>
                                                                 <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">
-                                                                    {card.dueDate ? new Date(card.dueDate).toLocaleDateString() : 'No Date'}
+                                                                    {card.dueDate ? new Date(card.dueDate).toLocaleDateString() : t('labels.no_date')}
                                                                 </span>
                                                             </div>
                                                             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${ {low: 'bg-blue-300', med: 'bg-yellow-400', high: 'bg-red-500'}[card.urgency?.toLowerCase() || 'low'] }`}></div>
@@ -607,10 +607,10 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                 </dnd.Droppable>
                                 <div className="p-3 border-t border-gray-200 bg-gray-100/50 rounded-b-[2rem]">
                                     <button onClick={() => { 
-                                        const nc = { columnId: 'backlog', title: 'New Backlog Item', urgency: 'LOW', assignees: [user?.email], auditEvent: { user: user?.email || 'System', action: 'Created backlog card' } };
+                                        const nc = { columnId: 'backlog', title: t('labels.new_backlog_item'), urgency: 'LOW', assignees: [user?.email], auditEvent: { user: user?.email || 'System', action: 'Created backlog card' } };
                                         fetch(`/api/workspaces/${workspace.id}/tasks`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(nc) }).then(r=>r.json()).then(task => { const resId = task.id || task._id; const finalTask = { ...task, id: resId }; setCards(prev => [...prev, finalTask]); setEditingCard(finalTask); }); 
                                     }} className="w-full py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-2">
-                                        <window.Icon name="plus" size={14} /> Add to Backlog
+                                        <window.Icon name="plus" size={14} /> {t('actions.add_to_backlog')}
                                     </button>
                                 </div>
                             </div>
@@ -623,17 +623,17 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                         {(providedCol) => (
                                             <div ref={providedCol.innerRef} {...providedCol.draggableProps} className={`w-full md:w-auto md:min-w-[310px] flex flex-col gap-4 group ${colThemeClasses} rounded-[2rem] p-4 h-fit max-h-full`}>
                                                 <div {...providedCol.dragHandleProps} className={`flex justify-between items-center px-4 border-b border-inherit pb-4 pt-2`}>
-                                                    <div className="flex gap-2 items-center"><h3 className="text-sm font-black uppercase tracking-widest text-inherit">{col.title}</h3><button onClick={() => setViewArchivedCol(col.id)} className={`opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg ${colIconThemeClasses}`}><window.Icon name="archive" size={16}/></button></div>
+                                                    <div className="flex gap-2 items-center"><h3 className="text-sm font-black uppercase tracking-widest text-inherit">{col.title}</h3><button onClick={() => setViewArchivedCol(col.id)} className={`opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg ${colIconThemeClasses}`} title={t('labels.archived_cards')}><window.Icon name="archive" size={16}/></button></div>
                                                     <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
                                                         <button onClick={() => { 
-                                                            const nc = { columnId: col.id, title: 'New Task', urgency: 'LOW', assignees: [user?.email], auditEvent: { user: user?.email || 'System', action: 'Created card' } };
+                                                            const nc = { columnId: col.id, title: t('labels.new_task'), urgency: 'LOW', assignees: [user?.email], auditEvent: { user: user?.email || 'System', action: 'Created card' } };
                                                             fetch(`/api/workspaces/${workspace.id}/tasks`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(nc) }).then(r=>r.json()).then(task => { const resId = task.id || task._id; const finalTask = { ...task, id: resId }; setCards(prev => [...prev, finalTask]); setEditingCard(finalTask); }); 
-                                                        }} className={`p-1.5 rounded-lg transition ${colIconThemeClasses}`}><window.Icon name="plus-circle" size={18} /></button>
-                                                        {col.id !== 'todo' && <button onClick={() => showConfirm('Erase Stage', `Erase ${col.title}?`, async () => { 
+                                                        }} className={`p-1.5 rounded-lg transition ${colIconThemeClasses}`} title={t('actions.new_task')}><window.Icon name="plus-circle" size={18} /></button>
+                                                        {col.id !== 'todo' && <button onClick={() => showConfirm(t('actions.erase_stage'), t('alerts.confirm_erase_stage', {name: col.title}), async () => { 
                                                 const newCols = columns.filter(c => c.id !== col.id);
                                                 await fetch(`/api/workspaces/${workspace.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ columns: newCols }) });
                                                 setColumns(newCols);
-                                            })} className={`p-1.5 rounded-lg transition ${colIconThemeClasses}`}><window.Icon name="minus-circle" size={18} /></button>}
+                                            })} className={`p-1.5 rounded-lg transition ${colIconThemeClasses}`} title={t('actions.erase_stage')}><window.Icon name="minus-circle" size={18} /></button>}
                                                     </div>
                                                 </div>
                                                 <dnd.Droppable droppableId={String(col.id || `col-${index}`)}>
@@ -643,7 +643,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                                                 <dnd.Draggable key={`col-${card.id || card._id || idx}`} draggableId={String(card.id || card._id)} index={idx}>
                                                                     {(provided, snapshot) => (
                                                                         <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps} onClick={() => setEditingCard(card)} className={`bg-white text-gray-800 border border-gray-100 rounded-2xl p-4 insta-shadow hover:shadow-xl transition-all duration-300 cursor-pointer group relative ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-2xl z-50' : 'hover:scale-[1.02]'}`}>
-                                            <div className="flex justify-between items-start mb-3"><div className={`w-16 h-2 rounded-full ${ {low: 'bg-blue-300', med: 'bg-yellow-400', high: 'bg-red-500'}[card.urgency?.toLowerCase() || 'low'] }`}></div><div className="opacity-0 group-hover:opacity-100 flex gap-2 transition" onClick={e => e.stopPropagation()}><button onClick={async (e) => { e.stopPropagation(); await fetch(`/api/tasks/${card.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ archived: true, auditEvent: { user: user?.email || 'System', action: 'Archived card' } }) }); setCards(cards.map(c => c.id === card.id ? { ...c, archived: true } : c)); showToast('Card archived', 'success'); }} className="p-2 bg-gray-50 text-gray-400 hover:text-red-500 rounded-xl hover:bg-red-50"><window.Icon name="archive" size={14}/></button><button onClick={(e) => { e.stopPropagation(); moveCard(card.id, -1); }} className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100"><window.Icon name="arrow-left" size={14}/></button><button onClick={(e) => { e.stopPropagation(); moveCard(card.id, 1); }} className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100"><window.Icon name="arrow-right" size={14}/></button></div></div>
+                                            <div className="flex justify-between items-start mb-3"><div className={`w-16 h-2 rounded-full ${ {low: 'bg-blue-300', med: 'bg-yellow-400', high: 'bg-red-500'}[card.urgency?.toLowerCase() || 'low'] }`}></div><div className="opacity-0 group-hover:opacity-100 flex gap-2 transition" onClick={e => e.stopPropagation()}><button onClick={async (e) => { e.stopPropagation(); await fetch(`/api/tasks/${card.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ archived: true, auditEvent: { user: user?.email || 'System', action: 'Archived card' } }) }); setCards(cards.map(c => c.id === card.id ? { ...c, archived: true } : c)); showToast(t('alerts.card_archived'), 'success'); }} className="p-2 bg-gray-50 text-gray-400 hover:text-red-500 rounded-xl hover:bg-red-50" title={t('actions.archive')}><window.Icon name="archive" size={14}/></button><button onClick={(e) => { e.stopPropagation(); moveCard(card.id, -1); }} className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100"><window.Icon name="arrow-left" size={14}/></button><button onClick={(e) => { e.stopPropagation(); moveCard(card.id, 1); }} className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100"><window.Icon name="arrow-right" size={14}/></button></div></div>
                                             <h4 className="font-black text-base leading-tight mb-3 tracking-tight">{card.title}</h4>
                                             {card.dueDate && <div className="inline-flex items-center gap-2.5 bg-red-50 text-red-500 px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest mb-3 border-2 border-red-100 shadow-lg shadow-red-100"><window.Icon name="calendar" size={14} /> {card.dueDate}</div>}
                                             {card.checklist?.length > 0 && <div className="w-full bg-gray-50 h-1.5 rounded-full overflow-hidden mb-3 border border-gray-100"><div className="bg-emerald-400 h-fit max-h-full transition-all duration-1000" style={{ width: `${(card.checklist.filter(i => i && i.done).length / card.checklist.length) * 100}%` }}></div></div>}
@@ -658,7 +658,6 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                                 <div className="flex gap-2">
                                                     {card.attachments?.length > 0 && <window.Icon name="paperclip" size={14} />}
                                                     {card.content && <window.Icon name="align-left" size={14} />}
-                                                    {card.comments?.length > 0 && <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400"><window.Icon name="message-circle" size={14} /> {card.comments.length}</div>}
                                                     {card.comments?.length > 0 && <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400"><window.Icon name="message-circle" size={14} /> {card.comments.length}</div>}
                                                 </div>
                                             </div>
@@ -721,8 +720,8 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[9999] flex items-center justify-center p-4 animate-fade-in">
                     <div className="max-w-[480px] w-full bg-white p-8 rounded-[2.5rem] shadow-2xl border border-red-500/30">
                         <div className="w-16 h-16 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6"><window.Icon name="alert-triangle" size={32} className="text-red-500" /></div>
-                        <h2 className="text-3xl font-black italic tracking-tighter mb-2 text-center text-black">Action Required</h2>
-                        <p className="text-xs text-gray-500 mb-6 text-center font-bold">The following cards are overdue by more than 3 days. Please take action to maintain workspace health.</p>
+                        <h2 className="text-3xl font-black italic tracking-tighter mb-2 text-center text-black">{t('labels.action_required')}</h2>
+                        <p className="text-xs text-gray-500 mb-6 text-center font-bold">{t('alerts.overdue_msg')}</p>
                         
                         <div className="max-h-[200px] overflow-y-auto no-scrollbar space-y-2 mb-6 border border-gray-100 rounded-2xl p-4 bg-gray-50">
                             {expiredCards.map(c => (
@@ -739,9 +738,9 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                 await fetch(`/api/workspaces/${workspace.id}/tasks/bulk-archive`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ cardIds }) });
                                 setCards(prev => prev.map(c => cardIds.includes(c.id || c._id) ? { ...c, archived: true, expiredAlertAcknowledged: true } : c));
                                 setShowExpiredModal(false);
-                                showToast("Expired tasks archived. 📦");
+                                showToast(t('alerts.workspace_archived'));
                             }} className="w-full py-3 bg-red-500 text-white rounded-xl text-xs font-black tracking-widest uppercase shadow-lg shadow-red-200 hover:scale-105 active:scale-95 transition">
-                                Archive All Expired
+                                {t('actions.archive_all_expired')}
                             </button>
                             
                             <div className="flex gap-2">
@@ -754,14 +753,14 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                     await fetch(`/api/workspaces/${workspace.id}/tasks/bulk-move`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ cardIds, targetColumn: selectedMoveCol }) });
                                     setCards(prev => prev.map(c => cardIds.includes(c.id || c._id) ? { ...c, columnId: selectedMoveCol, col: selectedMoveCol, expiredAlertAcknowledged: true } : c));
                                     setShowExpiredModal(false);
-                                    showToast(`Tasks moved. 🚀`);
+                                    showToast(t('alerts.tasks_moved'));
                                 }} className="px-6 py-3 bg-black text-white rounded-xl text-xs font-black tracking-widest uppercase shadow-lg shadow-gray-300 hover:scale-105 active:scale-95 transition">
-                                    Move All
+                                    {t('actions.move_all')}
                                 </button>
                             </div>
 
                             <button onClick={() => setShowExpiredModal(false)} className="w-full py-3 text-gray-500 rounded-xl text-[10px] font-black tracking-widest uppercase hover:bg-gray-50 transition">
-                                Do Nothing
+                                {t('actions.do_nothing')}
                             </button>
                         </div>
                     </div>
@@ -784,7 +783,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                             ))}
                         </div>
                         <div className="p-4 border-t border-gray-100 flex gap-2">
-                            <input className="flex-1 p-3 bg-gray-50 rounded-xl text-xs outline-none focus:ring-1 focus:ring-black" placeholder="Command Kanban..." value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAISend()} />
+                            <input className="flex-1 p-3 bg-gray-50 rounded-xl text-xs outline-none focus:ring-1 focus:ring-black" placeholder={t('labels.search_placeholder')} value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAISend()} />
                             <button onClick={handleAISend} className="p-3 bg-black text-white rounded-xl active:scale-95 transition"><window.Icon name="send" size={18}/></button>
                         </div>
                     </>
@@ -793,40 +792,40 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                 )}
             </div>
 
-            <window.GlobalModal isOpen={isAISettingsOpen} onClose={() => setIsAISettingsOpen(false)} title="AI Configuration" footer={
+            <window.GlobalModal isOpen={isAISettingsOpen} onClose={() => setIsAISettingsOpen(false)} title={t('labels.ai_configuration')} footer={
                 <div className="flex gap-4">
                     <button onClick={() => {
                         const defaults = { model: 'gemini-3-flash-preview', apiKey: '[REDACTED_API_KEY]', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/' };
                         setAiConfig(defaults);
-                        showToast("AI Configuration reset to system defaults.");
-                    }} className="bg-gray-100 text-gray-500 px-6 py-3 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-gray-200 transition">Reset Defaults</button>
-                    <button onClick={() => setIsAISettingsOpen(false)} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl">Save & Sync</button>
+                        showToast(t('alerts.confirm_reset_ai'));
+                    }} className="bg-gray-100 text-gray-500 px-6 py-3 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-gray-200 transition">{t('actions.reset_defaults')}</button>
+                    <button onClick={() => setIsAISettingsOpen(false)} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl">{t('actions.save_and_sync')}</button>
                 </div>
             }>
                 <div className="space-y-4">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Note: Only OpenAI-compatible endpoints are supported.</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{t('alerts.ai_defaults_msg')}</p>
                     <div>
-                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Base URL</label>
+                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.base_url')}</label>
                         <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-xs font-bold" value={aiConfig.baseUrl} onChange={e => setAiConfig({...aiConfig, baseUrl: e.target.value})} placeholder="https://api.openai.com/v1" />
                     </div>
                     <div>
-                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">API Key</label>
+                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.api_key')}</label>
                         <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-xs font-bold" type="password" value={aiConfig.apiKey} onChange={e => setAiConfig({...aiConfig, apiKey: e.target.value})} placeholder="sk-..." />
                     </div>
                     <div>
-                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Model ID</label>
+                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.model_id')}</label>
                         <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-xs font-bold" value={aiConfig.model} onChange={e => setAiConfig({...aiConfig, model: e.target.value})} placeholder="gpt-4o" />
                     </div>
                 </div>
             </window.GlobalModal>
 
-            <window.GlobalModal isOpen={!!viewArchivedCol} onClose={() => setViewArchivedCol(null)} title={`Archived Cards`} footer={<button onClick={() => setViewArchivedCol(null)} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl text-white">Close</button>}>
+            <window.GlobalModal isOpen={!!viewArchivedCol} onClose={() => setViewArchivedCol(null)} title={t('labels.archived_cards')} footer={<button onClick={() => setViewArchivedCol(null)} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl text-white">{t('actions.close')}</button>}>
                 <div className="space-y-4 max-h-96 overflow-y-auto no-scrollbar">
-                    {cards.filter(c => c && c.columnId === viewArchivedCol && c.archived).length === 0 ? <p className="text-gray-400 text-xs text-center py-4">No archived cards in this column.</p> : 
+                    {cards.filter(c => c && c.columnId === viewArchivedCol && c.archived).length === 0 ? <p className="text-gray-400 text-xs text-center py-4">{t('alerts.no_archived_cards')}</p> : 
                     cards.filter(c => c && c.columnId === viewArchivedCol && c.archived).map(c => (
                         <div key={c.id} className="flex justify-between items-center p-4 border border-gray-100 rounded-xl">
                             <div><p className="font-black text-sm">{c.title}</p></div>
-                            <button onClick={async () => { await fetch(`/api/tasks/${c.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ archived: false, auditEvent: { user: user?.email || 'System', action: 'Restored card' } }) }); setCards(prev => prev.map(card => card.id === c.id ? { ...card, archived: false } : card)); }} className="text-blue-500 hover:text-blue-600 bg-blue-50 p-2 rounded-lg flex gap-2 items-center text-xs font-bold"><window.Icon name="upload-cloud" size={14}/> Restore</button>
+                            <button onClick={async () => { await fetch(`/api/tasks/${c.id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ archived: false, auditEvent: { user: user?.email || 'System', action: 'Restored card' } }) }); setCards(prev => prev.map(card => card.id === c.id ? { ...card, archived: false } : card)); }} className="text-blue-500 hover:text-blue-600 bg-blue-50 p-2 rounded-lg flex gap-2 items-center text-xs font-bold"><window.Icon name="upload-cloud" size={14}/> {t('actions.restore')}</button>
                         </div>
                     ))}
                 </div>

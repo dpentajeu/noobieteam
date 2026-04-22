@@ -1,6 +1,7 @@
 window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }) => {
     const { showConfirm } = window.useModals();
     const { showToast } = window.useToasts();
+    const { t } = window.useTranslation ? window.useTranslation() : { t: k => k };
     const [title, setTitle] = React.useState(card.title);
     const [content, setContent] = React.useState(card.content);
     const [isEditingContent, setIsEditingContent] = React.useState(false);
@@ -22,12 +23,6 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }
     const [newComment, setNewComment] = React.useState('');
     const [showCommentTagDropdown, setShowCommentTagDropdown] = React.useState(false);
     const [commentTaggedUsers, setCommentTaggedUsers] = React.useState([]);
-
-    const fetchComments = async () => {
-        try {
-            const res = await fetch(`/api/workspaces/dummy`); // actually just fetch task? Wait, task is injected.
-        } catch(e) {}
-    };
 
     const submitComment = async () => {
         if (!newComment.trim()) return;
@@ -81,7 +76,7 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }
     };
 
     const parseContent = (html) => {
-        if (!html) return '<p class="italic text-gray-400">No objective defined...</p>';
+        if (!html) return `<p class="italic text-gray-400">${t('alerts.no_objective') || 'No objective defined...'}</p>`;
         const temp = document.createElement('div');
         temp.innerHTML = html;
         const walk = document.createTreeWalker(temp, NodeFilter.SHOW_TEXT, null, false);
@@ -129,14 +124,14 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }
             const reader = new FileReader();
             reader.onload = (re) => {
                 setAttachments([...attachments, { id: window.generateId('att'), name: file.name, dataUrl: re.target.result, size: (file.size / 1024).toFixed(1) + ' KB' }]);
-                showToast("File attachment synchronized. 📎");
+                showToast(t('alerts.file_attached') || "File attachment synchronized. 📎");
             };
             reader.readAsDataURL(file);
         }
     };
 
     const getMemberData = (email) => {
-        return allUsers.find(u => u.email === email) || { email, avatar: null };
+        return (Array.isArray(allUsers) ? allUsers : []).find(u => u.email === email) || { email, avatar: null };
     };
 
     return (
@@ -145,24 +140,24 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }
                 <div className="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
                     <input className="text-2xl font-black focus:outline-none w-full bg-transparent tracking-tighter" value={title} onChange={e => setTitle(e.target.value)} />
                     <div className="flex gap-2">
-                        <button onClick={() => showConfirm('Delete Mission', 'Erase completely?', () => onDelete(card.id))} className="p-3 text-red-400 hover:bg-red-50 rounded-full transition"><window.Icon name="trash-2" size={20} /></button>
+                        <button onClick={() => showConfirm(t('actions.delete_mission'), t('actions.erase_completely'), () => onDelete(card.id))} className="p-3 text-red-400 hover:bg-red-50 rounded-full transition"><window.Icon name="trash-2" size={20} /></button>
                         <button onClick={onClose} className="p-3 hover:bg-gray-100 rounded-full transition"><window.Icon name="x" size={20} /></button>
                     </div>
                 </div>
                 <div className="p-4 md:p-8 space-y-6 md:space-y-8 overflow-y-auto no-scrollbar flex-1">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                        <div><label className="block text-sm font-black text-black uppercase tracking-widest mb-3">Deadline</label><input type="date" className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 text-[11px] font-black" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
-                        <div><label className="block text-sm font-black text-black uppercase tracking-widest mb-3">Priority</label>
+                        <div><label className="block text-sm font-black text-black uppercase tracking-widest mb-3">{t('labels.deadline')}</label><input type="date" className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 text-[11px] font-black" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
+                        <div><label className="block text-sm font-black text-black uppercase tracking-widest mb-3">{t('labels.priority')}</label>
                             <div className="flex gap-1.5 p-1 bg-gray-50 rounded-2xl border border-gray-100">
                                 {['low', 'med', 'high'].map(lvl => (
-                                    <button key={lvl} onClick={() => setUrgency(lvl)} className={`flex-1 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition ${urgency === lvl ? colors[lvl] + ' text-white shadow-md' : 'text-gray-400 hover:bg-white'}`}>{lvl}</button>
+                                    <button key={lvl} onClick={() => setUrgency(lvl)} className={`flex-1 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition ${urgency === lvl ? colors[lvl] + ' text-white shadow-md' : 'text-gray-400 hover:bg-white'}`}>{t(`labels.${lvl}`)}</button>
                                 ))}
                             </div>
                         </div>
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-black text-black uppercase tracking-widest mb-3">Assignees</label>
+                        <label className="block text-sm font-black text-black uppercase tracking-widest mb-3">{t('labels.assignees')}</label>
                         <div className="flex flex-wrap gap-2 items-center">
                             {assignees.map(email => {
                                 if (!email) return null;
@@ -178,7 +173,7 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }
                             <div className="relative">
                                 <button onClick={() => setShowAssignDropdown(!showAssignDropdown)} className="w-8 h-8 rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-400 transition"><window.Icon name="plus" size={14}/></button>
                                 {showAssignDropdown && (
-                                    <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-[2000] animate-pop">
+                                    <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-[2000] animate-pop text-black">
                                         {members.map(email => (
                                             <button key={email} onClick={() => { toggleAssignee(email); setShowAssignDropdown(false); }} className={`w-full text-left p-2 rounded-xl text-[10px] font-bold flex items-center gap-2 hover:bg-gray-50 ${assignees.includes(email) ? 'bg-blue-50 text-blue-600' : ''}`}>
                                                 <window.Avatar label={email.charAt(0).toUpperCase()} src={getMemberData(email).avatar} size="sm" /> {email}
@@ -192,7 +187,7 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }
 
                     <div>
                         <div className="flex justify-between items-center mb-3">
-                            <label className="text-sm font-black text-black uppercase tracking-widest">Mission Objective</label>
+                            <label className="text-sm font-black text-black uppercase tracking-widest">{t('labels.mission_objective')}</label>
                             <button onClick={() => setIsEditingContent(!isEditingContent)} className={`p-2 rounded-lg transition ${isEditingContent ? 'bg-black text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}><window.Icon name="edit-3" size={14} /></button>
                         </div>
                         {isEditingContent ? (
@@ -203,7 +198,7 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-black text-black uppercase tracking-widest mb-6 flex justify-between">Checklist Status <span className="text-blue-500 lowercase tracking-tight">{checklist.filter(i => i && i.done).length}/{checklist.length} done</span></label>
+                        <label className="block text-sm font-black text-black uppercase tracking-widest mb-6 flex justify-between">{t('labels.checklist_status')} <span className="text-blue-500 lowercase tracking-tight">{checklist.filter(i => i && i.done).length}/{checklist.length} {t('labels.done')}</span></label>
                         <div className="space-y-3 mb-6">
                             {checklist.map(item => {
                                 if (!item) return null;
@@ -215,23 +210,23 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }
                                 );
                             })}
                         </div>
-                        <input className="w-full p-4 bg-gray-50 rounded-[1.5rem] border border-gray-100 outline-none text-[11px] font-black" placeholder="Define new objective..." value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && (setChecklist(prev => [...prev, { id: window.generateId('chk'), text: newCheckItem, done: false }]), setNewCheckItem(''))} />
+                        <input className="w-full p-4 bg-gray-50 rounded-[1.5rem] border border-gray-100 outline-none text-[11px] font-black" placeholder={t('labels.define_objective')} value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && (setChecklist(prev => [...prev, { id: window.generateId('chk'), text: newCheckItem, done: false }]), setNewCheckItem(''))} />
                     </div>
 
-                    <div><label className="block text-sm font-black text-black uppercase tracking-widest mb-6">Attachments</label>
+                    <div><label className="block text-sm font-black text-black uppercase tracking-widest mb-6">{t('labels.attachments')}</label>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {attachments.map((a, i) => (
                                 <div key={i} className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm hover:shadow-md transition">
                                     <div className="flex items-center gap-3"><window.Icon name="file-text" size={18} className="text-gray-400" /><div><p className="text-[10px] font-black line-clamp-1">{a.name}</p><p className="text-[8px] text-gray-400 uppercase font-black">{a.size}</p></div></div>
-                                    <div className="flex gap-1"><button onClick={() => { const l = document.createElement('a'); l.href = a.dataUrl; l.download = a.name; l.click(); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition" title="Download"><window.Icon name="download" size={16} /></button><button onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition" title="Remove"><window.Icon name="trash-2" size={16} /></button></div>
+                                    <div className="flex gap-1"><button onClick={() => { const l = document.createElement('a'); l.href = a.dataUrl; l.download = a.name; l.click(); }} className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition" title={t('actions.download')}><window.Icon name="download" size={16} /></button><button onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition" title={t('actions.remove')}><window.Icon name="trash-2" size={16} /></button></div>
                                 </div>
                             ))}
-                            <div onClick={() => fileInputRef.current.click()} className="border-2 border-dashed border-gray-100 p-4 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition text-gray-300 gap-1.5"><window.Icon name="upload-cloud" size={24} /><span className="text-[9px] font-black uppercase tracking-widest">Attach Intel</span><input type="file" ref={fileInputRef} className="hidden" onChange={handleUpload} /></div>
+                            <div onClick={() => fileInputRef.current.click()} className="border-2 border-dashed border-gray-100 p-4 rounded-2xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition text-gray-300 gap-1.5"><window.Icon name="upload-cloud" size={24} /><span className="text-[9px] font-black uppercase tracking-widest">{t('actions.attach_intel')}</span><input type="file" ref={fileInputRef} className="hidden" onChange={handleUpload} /></div>
                         </div>
                     </div>
 
                     <div className="border-t border-gray-100 pt-8 mt-4">
-                        <label className="block text-sm font-black text-black uppercase tracking-widest mb-6">Mission Chatter</label>
+                        <label className="block text-sm font-black text-black uppercase tracking-widest mb-6">{t('labels.mission_chatter')}</label>
                         <div className="space-y-4 mb-6">
                             {comments.map(cmt => {
                                 const m = getMemberData(cmt.authorEmail);
@@ -256,20 +251,20 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }
                                     </div>
                                 );
                             })}
-                            {comments.length === 0 && <p className="text-xs text-gray-400 italic">No communication logged.</p>}
+                            {comments.length === 0 && <p className="text-xs text-gray-400 italic">{t('alerts.no_communication')}</p>}
                         </div>
                         <div className="flex gap-2">
                             <div className="relative flex-1">
                                 <textarea 
                                     className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 text-sm resize-none outline-none focus:ring-2 focus:ring-blue-500 transition" 
                                     rows="2" 
-                                    placeholder="Leave a comment... Type @ to tag" 
+                                    placeholder={t('labels.comment_placeholder')}
                                     value={newComment} 
                                     onChange={handleCommentChange} 
                                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), submitComment())}
                                 />
                                 {showCommentTagDropdown && (
-                                    <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-[2000] animate-pop">
+                                    <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 z-[2000] animate-pop text-black">
                                         {members.map(email => (
                                             <button key={email} onClick={() => addCommentTag(email)} className="w-full text-left p-2 rounded-xl text-[10px] font-bold flex items-center gap-2 hover:bg-gray-50">
                                                 <window.Avatar label={email.charAt(0).toUpperCase()} src={getMemberData(email).avatar} size="sm" /> {email.split('@')[0]}
@@ -284,8 +279,8 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }
                 </div>
                 <div className="p-6 border-t border-gray-50 bg-gray-50/50 flex flex-col">
     {showAudit && (
-        <div className="mb-4 bg-white p-4 rounded-xl border border-gray-100 max-h-48 overflow-y-auto">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Audit Trail</h4>
+        <div className="mb-4 bg-white p-4 rounded-xl border border-gray-100 max-h-48 overflow-y-auto text-black">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">{t('labels.audit_trail')}</h4>
             <div className="space-y-2">
                 {(card.auditTrail || []).map((log, i) => (
                     <div key={i} className="text-xs text-gray-500 flex justify-between border-b border-gray-50 pb-1">
@@ -293,15 +288,15 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete }
                         <span className="text-[9px] text-gray-400">{new Date(log.timestamp).toLocaleString()}</span>
                     </div>
                 ))}
-                {(!card.auditTrail || card.auditTrail.length === 0) && <div className="text-xs text-gray-400 italic">No history logged yet.</div>}
+                {(!card.auditTrail || card.auditTrail.length === 0) && <div className="text-xs text-gray-400 italic">{t('alerts.no_history')}</div>}
             </div>
         </div>
     )}
     <div className="flex justify-between items-center">
         <button onClick={() => setShowAudit(!showAudit)} className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 transition text-[10px] font-black uppercase tracking-widest">
-            <window.Icon name={showAudit ? "chevron-up" : "chevron-down"} size={14} /> Audit Trail
+            <window.Icon name={showAudit ? "chevron-up" : "chevron-down"} size={14} /> {t('labels.audit_trail')}
         </button>
-        <button onClick={() => onSave({ title, content, dueDate, urgency, checklist, assignees, attachments, auditEvent: { user: user?.email || 'System', action: 'Updated card contents' } })} className="bg-blue-500 text-white px-10 py-4 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition shadow-xl">Synchronize</button>
+        <button onClick={() => onSave({ title, content, dueDate, urgency, checklist, assignees, attachments, auditEvent: { user: user?.email || 'System', action: 'Updated card contents' } })} className="bg-blue-500 text-white px-10 py-4 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition shadow-xl">{t('actions.synchronize')}</button>
     </div>
 </div>
             </div>

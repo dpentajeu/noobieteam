@@ -1,13 +1,14 @@
 window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
     const { showPrompt, showAlert, showConfirm } = window.useModals();
     const { showToast } = window.useToasts();
+    const { t } = window.useTranslation ? window.useTranslation() : { t: k => k };
     const [secrets, setSecrets] = React.useState(workspace.secrets || []);
     const [newSecret, setNewSecret] = React.useState({ service: '', account: '', password: '' });
     const [isAdding, setIsAdding] = React.useState(false);
     const [revealData, setRevealData] = React.useState(null);
 
     const addSecret = async function() {
-        if (!newSecret.service || !newSecret.account || !newSecret.password) return showAlert('Please fill all fields.', 'Missing Intel');
+        if (!newSecret.service || !newSecret.account || !newSecret.password) return showAlert(t('alerts.missing_fields'), 'Missing Intel');
         try {
             const res = await fetch('/api/workspaces/' + workspace.id + '/vault/encrypt', { 
                 method: 'POST', 
@@ -25,9 +26,9 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
             setSecrets(updatedSecrets);
             setNewSecret({ service: '', account: '', password: '' });
             setIsAdding(false);
-            showToast("Payload secured in the Vault. 🔐");
+            showToast(t('alerts.payload_secured'));
         } catch (err) {
-            showAlert('Vault sync failed: ' + err.message, 'Error');
+            showAlert(t('alerts.vault_sync_failed') + ': ' + err.message, 'Error');
         }
     };
 
@@ -40,8 +41,8 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
 
     const handleCreatePin = async function(e) {
         if (e && e.preventDefault) e.preventDefault();
-        if (pinPrompt.pin !== pinPrompt.confirm) return setPinError('PINs do not match.');
-        if (pinPrompt.pin.length < 6) return setPinError('PIN must be at least 6 characters.');
+        if (pinPrompt.pin !== pinPrompt.confirm) return setPinError(t('alerts.pins_do_not_match'));
+        if (pinPrompt.pin.length < 6) return setPinError(t('alerts.pin_min_length'));
         setPinLoading(true);
         try {
             const userEmail = user?.email;
@@ -55,13 +56,10 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
             
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Failed to save PIN.');
-            
-            if (!data) throw new Error('Empty payload returned from API.');
-            
+
             const updatedUser = Object.assign({}, user || {}, { vaultPin: data.vaultPin });
             onUpdateUser(updatedUser);
-            
-            showToast('Master Vault PIN created successfully. 🔐');
+            showToast(t('alerts.payload_secured'));
             setPinPrompt({ isOpen: false, pin: '', confirm: '' });
         } catch (err) {
             setPinError(err.message);
@@ -70,16 +68,7 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
         }
     };
 
-    const handleReveal = function(id) {
-        if (!user?.vaultPin) {
-            setPinPrompt({ isOpen: true, pin: '', confirm: '' });
-            return;
-        }
-        setRevealPrompt({ isOpen: true, id: id, pass: '' });
-        setRevealError('');
-    };
-
-    const processReveal = async function() {
+    const handleReveal = async function() {
         if (!revealPrompt.pass) return;
         setRevealLoading(true);
         setRevealError('');
@@ -90,161 +79,132 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
                 headers: {'Content-Type':'application/json'}, 
                 body: JSON.stringify({ cipherBase64: s.value, password: revealPrompt.pass }) 
             });
-            
-            if (res.status === 401) {
-                setRevealError('Incorrect password. Unable to decrypt secret.');
-                setRevealPrompt(Object.assign({}, revealPrompt, { pass: '' }));
-                setRevealLoading(false);
-                return;
-            }
-            if (!res.ok) throw new Error('Decryption failed');
-            
+            if (!res.ok) throw new Error(t('alerts.credentials_mismatch'));
             const data = await res.json();
-            const dec = data.decrypted;
-            
-            try {
-                const parsed = JSON.parse(dec);
-                setRevealData(Object.assign({}, parsed, { service: s.service }));
-                setRevealPrompt({ isOpen: false, id: null, pass: '' });
-            } catch (e) {
-                setRevealData({ service: s.service, account: 'Data Error', password: dec });
-                setRevealPrompt({ isOpen: false, id: null, pass: '' });
-            }
+            setRevealData(JSON.parse(data.decrypted));
+            setRevealPrompt({ isOpen: false, id: null, pass: '' });
+            showToast(t('alerts.decryption_successful'));
         } catch (err) {
-            setRevealError(err.message || 'Vault Error');
-            setRevealPrompt(Object.assign({}, revealPrompt, { pass: '' }));
+            setRevealError(err.message);
+        } finally {
+            setRevealLoading(false);
         }
-        setRevealLoading(false);
     };
 
-    const deleteSecret = async function(id) {
-        const updatedSecrets = secrets.filter(x => (x.id !== id && x._id !== id));
-        await onUpdate({ secrets: updatedSecrets });
-        setSecrets(updatedSecrets);
-        showToast("Secret purged.");
+    const deleteSecret = async (id) => {
+        showConfirm(t('actions.delete_mission'), t('actions.erase_completely'), async () => {
+            const updated = secrets.filter(s => (s.id !== id && s._id !== id));
+            await onUpdate({ secrets: updated });
+            setSecrets(updated);
+            showToast(t('alerts.secret_purged'));
+        });
     };
 
-    const copyToClipboard = function(text) {
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text);
-        } else {
-            let textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";
-            textArea.style.left = "-999999px";
-            textArea.style.top = "-999999px";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                document.execCommand('copy');
-            } catch (err) {
-                console.error('Fallback: Oops, unable to copy', err);
-            }
-            textArea.remove();
-        }
-        showToast("Copied to clipboard!");
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        showToast(t('alerts.copied_to_clipboard'));
     };
 
     return (
-        <window.React.Fragment>
-            {pinPrompt.isOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[9999] flex items-center justify-center p-4 animate-fade-in">
-                    <div className="max-w-[320px] w-full bg-white p-8 rounded-[2rem] shadow-2xl text-center">
-                        <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6"><window.Icon name="shield-alert" size={32} className="text-blue-500" /></div>
-                        <h2 className="text-2xl font-black italic tracking-tighter mb-2">Vault Security</h2>
-                        <p className="text-[10px] text-gray-500 mb-6">You must create a Master PIN to securely encrypt your Vault secrets. Minimum 6 characters.</p>
-                        <div className="space-y-4">
-                            <input className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 text-black font-black" type="password" placeholder="Enter PIN" autoFocus required value={pinPrompt.pin} onChange={e => { setPinPrompt(p => Object.assign({}, p, { pin: e.target.value })); setPinError(''); }} onKeyDown={e => e.key === 'Enter' && handleCreatePin(e)} />
-                            <input className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-xs outline-none focus:ring-1 focus:ring-blue-400 text-black font-black" type="password" placeholder="Confirm PIN" required value={pinPrompt.confirm} onChange={e => { setPinPrompt(p => Object.assign({}, p, { confirm: e.target.value })); setPinError(''); }} onKeyDown={e => e.key === 'Enter' && handleCreatePin(e)} />
-                            <button type="button" onClick={(e) => handleCreatePin(e)} disabled={pinLoading} className="w-full py-3 bg-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-100 hover:scale-105 active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                                {pinLoading && <window.Icon name="loader" size={14} className="animate-spin" />} Create Vault PIN
-                            </button>
-                            {pinError && <p className="text-red-500 text-[10px] font-bold animate-shake">{pinError}</p>}
-                        </div>
-                    </div>
+        <div className="p-8 max-w-6xl mx-auto animate-fade-in text-black">
+            <header className="mb-12 flex justify-between items-end">
+                <div>
+                    <h2 className="text-5xl font-black tracking-tighter">{t('labels.project_vault')}</h2>
+                    <p className="text-gray-400 mt-2 font-bold uppercase tracking-[0.2em] text-[10px]">{t('labels.encrypted_storage_center')}</p>
                 </div>
-            )}
-
-        <div className="p-8 max-w-4xl mx-auto animate-fade-in pb-32">
-            <header className="flex justify-between items-start mb-12">
-                <div><h2 className="text-4xl font-black mb-2 tracking-tighter">Project Vault</h2><p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">{t('labels.encrypted_storage_center')}</p></div>
-                <button onClick={() => setIsAdding(true)} className="relative p-4 bg-black text-white rounded-full hover:scale-110 active:scale-90 transition shadow-xl ml-8"><window.Icon name="key-round" size={24} /><div className="absolute bottom-2 right-2 bg-blue-500 rounded-full w-4 h-4 flex items-center justify-center border-2 border-black"><window.Icon name="plus" size={8} className="text-white" /></div></button>
-            </header>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {secrets.map(s => {
-                    const secretId = s.id || s._id;
-                    return (
-                    <div key={secretId} className="p-6 bg-white border border-gray-100 rounded-[2rem] flex justify-between items-center shadow-sm hover:border-blue-200 transition group">
-                        <div><p className="font-black text-lg tracking-tight">{s.service}</p><p className="text-[8px] text-gray-400 uppercase tracking-[0.2em] font-black mt-2">Secured Archive</p></div>
-                        <div className="flex gap-3">
-                            <button onClick={() => handleReveal(secretId)} className="px-5 py-2 bg-blue-50 text-blue-500 rounded-full font-black text-[9px] uppercase tracking-widest hover:bg-blue-500 hover:text-white transition shadow-sm">{t('actions.reveal')}</button>
-                            <button onClick={() => showConfirm('Destroy Payload', `Delete ${s.service}?`, () => deleteSecret(secretId))} className="p-2 text-gray-200 hover:text-red-500 transition"><window.Icon name="trash-2" size={16}/></button>
-                        </div>
-                    </div>
-                    );
-                })}
-            </div>
-            
-            <window.GlobalModal isOpen={isAdding} onClose={() => setIsAdding(false)} title="Secure Data Archiving" footer={<button onClick={addSecret} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl">Encrypt & Archive</button>}>
-                <div className="space-y-4">
-                    <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-[11px] font-bold" placeholder="Service Label (e.g. AWS)" value={newSecret.service} onChange={e => setNewSecret(Object.assign({}, newSecret, { service: e.target.value }))} />
-                    <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-[11px] font-medium" placeholder="Account Identifier" value={newSecret.account} onChange={e => setNewSecret(Object.assign({}, newSecret, { account: e.target.value }))} />
-                    <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-[11px] font-medium" type="password" placeholder="Access Key / Password" value={newSecret.password} onChange={e => setNewSecret(Object.assign({}, newSecret, { password: e.target.value }))} />
-                </div>
-            </window.GlobalModal>
-            <window.GlobalModal isOpen={revealPrompt.isOpen} onClose={() => setRevealPrompt({ isOpen: false, id: null, pass: '' })} title="Identity Verification" footer={
-                <button onClick={processReveal} disabled={revealLoading} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl">
-                    {revealLoading ? 'Decrypting...' : 'Decrypt'}
+                <button onClick={() => setIsAdding(true)} className="bg-black text-white px-10 py-4 rounded-full text-[10px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition flex items-center gap-3">
+                    <window.Icon name="plus-circle" size={18} /> {t('actions.add_secret') || "Add Secret"}
                 </button>
-            }>
-                <div className="space-y-2">
-                    <p className="mb-2 font-bold text-gray-600 text-sm">Re-type your Master PIN to decrypt.</p>
-                    <input 
-                        className={"w-full p-4 bg-gray-50 rounded-2xl border-2 outline-none text-black transition font-black text-xs " + (revealError ? "border-red-500 animate-shake focus:border-red-500" : "border-gray-100 focus:border-black")} 
-                        type="password" 
-                        value={revealPrompt.pass} 
-                        onChange={e => { setRevealPrompt(Object.assign({}, revealPrompt, { pass: e.target.value })); setRevealError(''); }} 
-                        autoFocus 
-                        onKeyDown={e => e.key === 'Enter' && processReveal()} 
-                        placeholder="Master PIN"
-                    />
-                    {revealError && <p className="text-red-500 text-xs font-bold mt-2 ml-1">{revealError}</p>}
-                </div>
-            </window.GlobalModal>
+            </header>
 
-
-            <window.GlobalModal isOpen={!!revealData} onClose={() => setRevealData(null)} title="Secure Access Granted" footer={<button onClick={() => setRevealData(null)} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl">{t('actions.close')}</button>}>
-                {revealData && (
-                    <div className="space-y-6">
-                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-700 flex items-center gap-3">
-                            <window.Icon name="shield-check" size={20} />
-                            <p className="text-[10px] font-bold uppercase tracking-widest">Decryption Successful</p>
-                        </div>
-                        <div className="space-y-4">
-                            <div>
-                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Service</p>
-                                <p className="text-sm font-bold text-black">{revealData.service}</p>
-                            </div>
-                            <div>
-                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Account</p>
-                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                    <p className="text-xs font-bold font-mono">{revealData.account}</p>
-                                    <button onClick={() => copyToClipboard(revealData.account)} className="p-2 text-gray-400 hover:text-black transition"><window.Icon name="copy" size={16} /></button>
-                                </div>
-                            </div>
-                            <div>
-                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Password</p>
-                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                    <p className="text-xs font-bold font-mono">{revealData.password}</p>
-                                    <button onClick={() => copyToClipboard(revealData.password)} className="p-2 text-gray-400 hover:text-black transition"><window.Icon name="copy" size={16} /></button>
-                                </div>
-                            </div>
-                        </div>
+            <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-xl overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="bg-gray-50/50 border-b border-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                            <th className="px-8 py-6">{t('labels.service')}</th>
+                            <th className="px-8 py-6">{t('labels.status')}</th>
+                            <th className="px-8 py-6 text-right">{t('labels.actions_col')}</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                        {secrets.map(s => (
+                            <tr key={s.id || s._id} className="hover:bg-gray-50/50 transition-colors group">
+                                <td className="px-8 py-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
+                                            <window.Icon name="shield" size={20} />
+                                        </div>
+                                        <span className="font-black text-sm tracking-tight">{s.service}</span>
+                                    </div>
+                                </td>
+                                <td className="px-8 py-6">
+                                    <span className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">
+                                        <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></div>
+                                        {t('labels.secured_archive')}
+                                    </span>
+                                </td>
+                                <td className="px-8 py-6 text-right">
+                                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onClick={() => setRevealPrompt({ isOpen: true, id: s.id || s._id, pass: '' })} className="p-3 bg-gray-50 hover:bg-black hover:text-white rounded-xl transition-all duration-300 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                            <window.Icon name="key" size={14} /> {t('actions.reveal')}
+                                        </button>
+                                        <button onClick={() => deleteSecret(s.id || s._id)} className="p-3 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-xl transition-all duration-300">
+                                            <window.Icon name="trash-2" size={14} />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                {secrets.length === 0 && (
+                    <div className="py-20 text-center flex flex-col items-center">
+                        <window.Icon name="lock" size={48} className="text-gray-100 mb-4" />
+                        <p className="text-gray-300 italic text-sm font-medium">Vault is currently empty. Secure your first credential above.</p>
                     </div>
                 )}
+            </div>
+
+            <window.GlobalModal isOpen={isAdding} onClose={() => setIsAdding(false)} title={t('actions.encrypt_archive')} footer={<button onClick={addSecret} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl">{t('actions.encrypt_archive')}</button>}>
+                <div className="space-y-4">
+                    <input className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none text-xs font-bold" placeholder={t('labels.service_label')} value={newSecret.service} onChange={e => setNewSecret({...newSecret, service: e.target.value})} />
+                    <input className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none text-xs font-bold" placeholder={t('labels.account_identifier')} value={newSecret.account} onChange={e => setNewSecret({...newSecret, account: e.target.value})} />
+                    <input className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none text-xs font-bold" type="password" placeholder={t('labels.password')} value={newSecret.password} onChange={e => setNewSecret({...newSecret, password: e.target.value})} />
+                </div>
+            </window.GlobalModal>
+
+            <window.GlobalModal isOpen={revealPrompt.isOpen} onClose={() => setRevealPrompt({ isOpen: false, id: null, pass: '' })} title={t('labels.vault_security')} footer={
+                <button onClick={handleReveal} disabled={revealLoading} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl flex items-center gap-2">
+                    {revealLoading && <window.Icon name="loader" size={14} className="animate-spin" />} {t('actions.decrypt')}
+                </button>
+            }>
+                <p className="mb-4">{t('alerts.retype_pin')}</p>
+                <input className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none text-xs font-bold" type="password" placeholder={t('labels.master_pin')} autoFocus value={revealPrompt.pass} onChange={e => setRevealPrompt({...revealPrompt, pass: e.target.value})} onKeyDown={e => e.key === 'Enter' && handleReveal()} />
+                {revealError && <p className="text-red-500 mt-2 text-[10px] font-black animate-shake">{revealError}</p>}
+            </window.GlobalModal>
+
+            <window.GlobalModal isOpen={!!revealData} onClose={() => setRevealData(null)} title={t('alerts.secure_access_granted')} footer={<button onClick={() => setRevealData(null)} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl">{t('actions.close')}</button>}>
+                <div className="space-y-6">
+                    <div>
+                        <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-2">{t('labels.service')}</label>
+                        <p className="text-sm font-black">{revealData?.service}</p>
+                    </div>
+                    <div>
+                        <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-2">{t('labels.account')}</label>
+                        <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <span className="font-mono text-xs">{revealData?.account}</span>
+                            <button onClick={() => copyToClipboard(revealData?.account)} className="text-blue-500"><window.Icon name="copy" size={16}/></button>
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-[8px] font-black text-gray-400 uppercase tracking-widest block mb-2">{t('labels.password')}</label>
+                        <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <span className="font-mono text-xs">{revealData?.password}</span>
+                            <button onClick={() => copyToClipboard(revealData?.password)} className="text-blue-500"><window.Icon name="copy" size={16}/></button>
+                        </div>
+                    </div>
+                </div>
             </window.GlobalModal>
         </div>
-        </window.React.Fragment>
     );
 };

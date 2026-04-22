@@ -12,28 +12,31 @@ Forget jumping between Jira for tasks, 1Password for secrets, GitBook for docs, 
 
 ### 📋 High-Fidelity Kanban Board
 - **Intuitive Organization:** Drag-and-drop cards, custom columns, and real-time state updates.
-- **In-Card Collaboration:** Rich text editing (WYSIWYG), file attachments, due dates, urgency tags, and an @mention commenting system.
+- **Jira-Style Backlog:** High-density vertical list view designed for rapid task prioritization and seamless transition into the active Sprint/To Do columns.
+- **In-Card Collaboration:** Rich text editing (WYSIWYG), file attachments, due dates, urgency tags, and a real-time `@mention` commenting system.
 - **Dynamic Theming:** Boards automatically adapt to 5 premium color themes (Light, Dark, Dark Blue, Green, Ocean Blue) with strict high-contrast readability.
 - **Shared Emoji Meme Effect:** Click an emoji to send a "Facebook Live" style spam reaction across your team's screens.
 
 ### 🔐 Project Vault (Zero-Knowledge Secrets)
 - **Secure Storage:** Store environment variables, API keys, and server passwords directly within your workspace.
-- **AES-256-GCM Encryption:** Credentials are encrypted in the backend using industry-standard authenticated encryption.
-- **OAuth Compatible:** Supports "Master PIN" creation for users authenticating via Google OAuth.
+- **AES-256-GCM Encryption:** Credentials are encrypted locally via an in-house Zero-Knowledge architecture ensuring only authenticated users can decipher secrets.
+- **Master PIN Infrastructure:** A stabilized Vault PIN system seamlessly secures local accounts and forces Master PIN creation for users authenticating via Google OAuth.
 
 ### 📚 Documentation Module (NoobieDocs)
-- **GitBook meets Postman:** A centralized hub for team knowledge.
-- **WYSIWYG Editor:** Build comprehensive guides with embedded code snippets.
+- **GitBook meets Postman:** A centralized, folder-based hub for team knowledge.
+- **WYSIWYG Editor:** Build comprehensive guides with embedded code snippets using robust Quill integration.
 - **API Spec Builder:** Design and test API endpoints natively within the platform, complete with Environment Variables support.
+- **Dynamic Public Pages:** Convert any internal folder into a polished, read-only public documentation site featuring a built-in 'Live API Test' panel.
 
 ### 🤖 The "NoobieHelper" AI Assistant
-- **Natural Language Control:** A floating, model-agnostic AI chat window (powered by Vercel AI SDK).
-- **Function Calling:** Tell the AI to "Create a task for the database migration due tomorrow," and watch it update the board instantly.
+- **Natural Language Control:** A floating, model-agnostic AI chat window powered by the Vercel AI SDK supporting OpenAI, Gemini, Qwen, and Kimi.
+- **Function Calling:** Tell the AI to "Create a task for the database migration due tomorrow," and watch it update the board instantly via dynamic state injection.
 - **Emoji Quoter:** Trigger motivational (or funny) AI-generated quotes that appear as a stunning text reveal animation in your footer.
 
-### 🎵 Embedded YouTube Jukebox
-- **Focus Mode:** A floating, minimizable YouTube player embedded directly in the UI.
-- **Persistent Playback:** Music continues uninterrupted as you navigate between workspaces and documentation.
+### 🌍 Global Features
+- **Multi-Language (i18n) Support:** Instantly switch the application interface between English, Simplified/Traditional Chinese, Japanese, Indonesian, Bahasa Malaysia, and Russian via a sleek dropdown selector.
+- **Mobile Responsive:** Seamlessly transforms into vertically stacked columns and full-screen overlay menus for mobile (`< 768px`) accessibility.
+- **Embedded YouTube Jukebox:** A floating, minimizable YouTube player embedded directly in the UI for uninterrupted focus music while you navigate.
 
 ---
 
