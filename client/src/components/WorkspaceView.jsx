@@ -102,7 +102,9 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
     
     React.useEffect(() => {
         if (!window.io) return;
-        const socket = window.io();
+        // Point socket.io to the dynamic backend path explicitly
+        const backendUrl = window.location.origin.includes('task.zettalog.com') ? 'https://task.zettalog.com' : window.location.origin;
+        const socket = window.io(backendUrl, { path: '/socket.io' });
         socketRef.current = socket;
         
         socket.on('card:locked', ({ cardId, user }) => {

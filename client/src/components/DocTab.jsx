@@ -161,6 +161,7 @@ window.DocTab = ({ workspaceId, user }) => {
             if (!name) return;
             const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
             const res = await fetch(`/api/workspaces/${workspaceId}/folders`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, slug }) });
+            if (!res.ok) throw new Error("Failed to create folder");
             const saved = await res.json();
             setFolders(prev => [...prev, { ...saved, id: saved._id || saved.id }]);
             setExpandedFolders(prev => ({ ...prev, [saved._id || saved.id]: true }));
