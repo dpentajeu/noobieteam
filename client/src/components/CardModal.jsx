@@ -158,8 +158,9 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, 
                     </div>
                 </div>
                 <div className="p-4 md:p-8 space-y-6 md:space-y-8 overflow-y-auto no-scrollbar flex-1">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                         <div><label className="block text-sm font-black text-black uppercase tracking-widest mb-3">{t('labels.deadline')}</label><input type="date" className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 text-[11px] font-black" value={dueDate} onChange={e => setDueDate(e.target.value)} /></div>
+                        <div><label className="block text-sm font-black text-black uppercase tracking-widest mb-3">{t('labels.epic_tag') || 'Epic Tag'}</label><input className="w-full p-4 bg-gray-50 rounded-2xl border border-gray-100 outline-none text-[11px] font-black" placeholder="e.g. Q4 Release" value={epic} onChange={e => setEpic(e.target.value)} /></div>
                         <div><label className="block text-sm font-black text-black uppercase tracking-widest mb-3">{t('labels.priority')}</label>
                             <div className="flex gap-1.5 p-1 bg-gray-50 rounded-2xl border border-gray-100">
                                 {['low', 'med', 'high'].map(lvl => (
@@ -214,7 +215,7 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, 
                         <label className="block text-sm font-black text-black uppercase tracking-widest mb-6 flex justify-between items-center">
             <div className="flex items-center gap-4">
                 {t('labels.checklist_status')}
-                <button onClick={() => setChecklist(prev => prev.map(item => ({ ...item, done: true })))} className="text-[9px] font-bold text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition">Check All</button>
+                <button onClick={() => setChecklist(prev => prev.map(item => ({ ...item, done: true })))} className="text-[9px] font-bold text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition">{t('actions.check_all') || 'Check All'}</button>
             </div>
             <span className="text-blue-500 lowercase tracking-tight">{checklist.filter(i => i && i.done).length}/{checklist.length} {t('labels.done')}</span>
         </label>

@@ -206,6 +206,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
             const content = c.content || '';
             if (filterKeyword && !title.toLowerCase().includes(filterKeyword.toLowerCase()) && !content.toLowerCase().includes(filterKeyword.toLowerCase())) return false;
             if (filterAssignee && (!c.assignees || !c.assignees.includes(filterAssignee))) return false;
+            if (filterEpic && c.epic !== filterEpic) return false;
             if (filterExpiring) {
                 if (!c.dueDate) return false;
                 const due = new Date(c.dueDate);
@@ -558,7 +559,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                     <input className="pl-8 pr-3 py-1.5 bg-white border border-gray-200 rounded-xl text-[10px] font-bold outline-none focus:border-blue-500 w-32 lg:w-48" placeholder={t('labels.search_placeholder')} value={filterKeyword} onChange={e => setFilterKeyword(e.target.value)} />
                                 </div>
                                 <select className="bg-white text-[10px] font-bold px-3 py-1.5 rounded-xl border border-gray-200 outline-none cursor-pointer text-gray-600" value={filterEpic} onChange={e => setFilterEpic(e.target.value)}>
-                                    <option value="">All Epics</option>
+                                    <option value="">{t('labels.all_epics') || 'All Epics'}</option>
                                     {epics.map(e => <option key={e} value={e}>{e}</option>)}
                                 </select>
                                 <select className="bg-white text-[10px] font-bold px-3 py-1.5 rounded-xl border border-gray-200 outline-none cursor-pointer text-gray-600" value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)}>
