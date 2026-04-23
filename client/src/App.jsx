@@ -470,12 +470,12 @@ window.Main = () => {
                 });
                 return fbResult;
             }
-            return key.split('.').pop(); // Return last part of key instead of full path
+            return null; // Return null to allow code-side fallbacks (e.g. || 'Default')
         }
         
         let result = val;
         Object.keys(params).forEach(pK => {
-            result = result.replace(`{${pK}}`, params[pK]);
+            result = result.replaceAll(`{${pK}}`, params[pK]);
         });
         return result;
     }, [translations]);
