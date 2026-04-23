@@ -151,6 +151,9 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
     const dnd = window.ReactBeautifulDnd;
     const [aiMessages, setAiMessages] = React.useState([{ role: 'bot', content: t('alerts.ai_welcome') || "Hello! I am NoobieHelper. I can help you manage your Kanban board via natural language. How can I assist today?" }]);
     const [aiInput, setAiInput] = React.useState('');
+    const [aiAttachment, setAiAttachment] = React.useState(null);
+    const aiFileInputRef = React.useRef(null);
+    const [isAiDragging, setIsAiDragging] = React.useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = React.useState(false);
     const [footerQuote, setFooterQuote] = React.useState(null);
     
@@ -360,11 +363,26 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
         return JSON.stringify({ columns: minimizedColumns, tasks: minimizedTasks });
     };
 
+    const handleAiFileUpload = (file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setAiAttachment({ name: file.name, content: e.target.result });
+            showToast(t('alerts.file_attached') || "File attached to AI Context. 📎");
+        };
+        reader.readAsText(file);
+    };
+
     const handleAISend = async () => {
-        if (!aiInput.trim()) return;
-        const userMsg = { role: 'user', content: aiInput };
+        if (!aiInput.trim() && !aiAttachment) return;
+        const contentStr = aiAttachment ? `Attached Context File: [${aiAttachment.name}]
+
+${aiAttachment.content}
+
+User Request: ${aiInput}` : aiInput;
+        const userMsg = { role: 'user', content: contentStr };
         setAiMessages(prev => [...prev, userMsg]);
         setAiInput('');
+        setAiAttachment(null);
         
         let currentMessages = [...aiMessages, userMsg];
         let turnLimit = 3; // Prevent infinite loops
@@ -565,7 +583,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                 <button onClick={() => setTab('docs')} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition ${tab === 'docs' ? 'bg-white shadow-md text-black' : 'text-gray-500 opacity-60'}`}>{t('tabs.docs')}</button>
             </div>
             {tab === 'board' ? (
-                <main className="p-4 md:p-8 flex-1 overflow-x-auto no-scrollbar flex flex-col animate-fade-in pb-32">
+                <main className="p-4 md:p-8 flex-1 overflow-x-auto overflow-y-hidden no-scrollbar flex flex-col animate-fade-in">
                     <header className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 md:mb-12 gap-4 md:gap-6">
                         <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8 w-full overflow-hidden">
                             <h1 className="text-2xl md:text-4xl font-black tracking-tighter truncate">{workspace.name}</h1>
@@ -681,7 +699,7 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                 {columns.filter(col => col.id !== 'backlog').map((col, index) => (
                                     <dnd.Draggable key={String(col.id || `col-${index}`)} draggableId={String(col.id || `col-${index}`)} index={index}>
                                         {(providedCol) => (
-                                            <div ref={providedCol.innerRef} {...providedCol.draggableProps} className={`w-full md:w-auto md:min-w-[310px] flex flex-col gap-4 group ${colThemeClasses} rounded-[2rem] p-4 h-fit max-h-full`}>
+                                            <div ref={providedCol.innerRef} {...providedCol.draggableProps} className={`w-full md:w-auto md:min-w-[310px] flex flex-col gap-4 group ${colThemeClasses} rounded-[2rem] p-4 h-full max-h-full`}>
                                                 <div {...providedCol.dragHandleProps} className={`flex justify-between items-center px-4 border-b border-inherit pb-4 pt-2`}>
                                                     <div className="flex gap-2 items-center"><h3 className="text-sm font-black uppercase tracking-widest text-inherit">{col.title}</h3><button onClick={() => setViewArchivedCol(col.id)} className={`opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg ${colIconThemeClasses}`} title={t('labels.archived_cards')}><window.Icon name="archive" size={16}/></button></div>
                                                     <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
@@ -858,7 +876,30 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                                 <div key={i} className={`ai-message ${msg.role === 'user' ? 'ai-msg-user' : 'ai-msg-bot'}`}>{msg.content}</div>
                             ))}
                         </div>
-                        <div className="p-4 border-t border-gray-100 flex gap-2">
+                        {aiAttachment && (
+                            <div className="px-4 py-2 bg-blue-50 border-t border-blue-100 flex justify-between items-center text-xs text-blue-700 font-bold">
+                                <div className="flex items-center gap-2 truncate"><window.Icon name="file-text" size={14} /> {aiAttachment.name}</div>
+                                <button onClick={() => setAiAttachment(null)} className="p-1 hover:bg-blue-100 rounded text-blue-400 hover:text-blue-700 transition"><window.Icon name="x" size={14} /></button>
+                            </div>
+                        )}
+                        <div 
+                            className="p-4 border-t border-gray-100 flex gap-2 relative"
+                            onDragOver={(e) => { e.preventDefault(); setIsAiDragging(true); }}
+                            onDragLeave={() => setIsAiDragging(false)}
+                            onDrop={async (e) => {
+                                e.preventDefault();
+                                setIsAiDragging(false);
+                                const file = e.dataTransfer.files[0];
+                                if (file) handleAiFileUpload(file);
+                            }}
+                        >
+                            {isAiDragging && (
+                                <div className="absolute inset-0 z-50 bg-white/90 border-2 border-dashed border-blue-400 rounded-b-2xl flex items-center justify-center pointer-events-none">
+                                    <p className="text-blue-500 font-black text-xs uppercase tracking-widest flex items-center gap-2"><window.Icon name="upload-cloud" size={16} /> Drop file to analyze context</p>
+                                </div>
+                            )}
+                            <button onClick={() => aiFileInputRef.current && aiFileInputRef.current.click()} className="p-3 bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700 rounded-xl transition" title="Upload PRD or Meeting Minutes (TXT/MD/JSON)"><window.Icon name="paperclip" size={18}/></button>
+                            <input type="file" ref={aiFileInputRef} className="hidden" accept=".txt,.md,.json,.csv" onChange={(e) => { if(e.target.files[0]) handleAiFileUpload(e.target.files[0]); }} />
                             <input className="flex-1 p-3 bg-gray-50 rounded-xl text-xs outline-none focus:ring-1 focus:ring-black" placeholder={t('labels.search_placeholder')} value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAISend()} />
                             <button onClick={handleAISend} className="p-3 bg-black text-white rounded-xl active:scale-95 transition"><window.Icon name="send" size={18}/></button>
                         </div>
