@@ -27,6 +27,8 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, 
     const [checklist, setChecklist] = React.useState(card.checklist || []);
     const [assignees, setAssignees] = React.useState(card.assignees || []);
     const [newCheckItem, setNewCheckItem] = React.useState('');
+    const [editingCheckId, setEditingCheckId] = React.useState(null);
+    const [editingCheckText, setEditingCheckText] = React.useState('');
     const [attachments, setAttachments] = React.useState(card.attachments || []);
     const [showAssignDropdown, setShowAssignDropdown] = React.useState(false);
     const fileInputRef = React.useRef(null);
@@ -126,6 +128,22 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, 
         });
     }, []);
 
+    const handleDeleteCheck = React.useCallback((id) => {
+        setChecklist(prev => prev.filter(item => item && item.id !== id));
+    }, []);
+
+    const handleStartEditCheck = (item) => {
+        setEditingCheckId(item.id);
+        setEditingCheckText(item.text);
+    };
+
+    const handleSaveCheckEdit = (id) => {
+        if (!editingCheckText.trim()) { setEditingCheckId(null); return; }
+        setChecklist(prev => prev.map(item => item && item.id === id ? { ...item, text: editingCheckText.trim() } : item));
+        setEditingCheckId(null);
+        setEditingCheckText('');
+    };
+
     const toggleAssignee = (email) => {
         if (!email) return;
         if (assignees.includes(email)) setAssignees(assignees.filter(e => e !== email));
@@ -213,25 +231,41 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, 
                     </div>
                     
                     <div>
-                        <label className="block text-sm font-black text-black uppercase tracking-widest mb-6 flex justify-between items-center">
+                        <div className="text-sm font-black text-black uppercase tracking-widest mb-6 flex justify-between items-center">
             <div className="flex items-center gap-4">
                 {t('labels.checklist_status')}
                 <button onClick={() => setChecklist(prev => prev.map(item => ({ ...item, done: true })))} className="text-[9px] font-bold text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition">{t('actions.check_all') || 'Check All'}</button>
             </div>
             <span className="text-blue-500 lowercase tracking-tight">{checklist.filter(i => i && i.done).length}/{checklist.length} {t('labels.done')}</span>
-        </label>
+        </div>
                         <div className="space-y-3 mb-6">
                             {checklist.map(item => {
                                 if (!item) return null;
                                 return (
                                     <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-[1.5rem] group transition hover:bg-white border border-transparent hover:border-gray-100">
-                                        <button onClick={() => handleToggleCheck(item.id)} className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all ${item.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200'}`}>{item.done && <window.Icon name="check" size={14} />}</button>
-                                        <span className={`text-[13px] font-bold ${item.done ? 'line-through text-gray-300' : 'text-gray-800'}`}>{item.text}</span>
+                                        <button onClick={() => handleToggleCheck(item.id)} className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all flex-shrink-0 ${item.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200'}`}>{item.done && <window.Icon name="check" size={14} />}</button>
+                                        {editingCheckId === item.id ? (
+                                            <input
+                                                autoFocus
+                                                className="flex-1 text-[13px] font-bold bg-white border border-blue-300 rounded-xl px-3 py-1 outline-none focus:ring-2 focus:ring-blue-400"
+                                                value={editingCheckText}
+                                                onChange={e => setEditingCheckText(e.target.value)}
+                                                onKeyDown={e => { if (e.key === 'Enter') handleSaveCheckEdit(item.id); if (e.key === 'Escape') setEditingCheckId(null); }}
+                                                onBlur={() => handleSaveCheckEdit(item.id)}
+                                            />
+                                        ) : (
+                                            <span
+                                                className={`flex-1 text-[13px] font-bold ${item.done ? 'line-through text-gray-300 cursor-default' : 'text-gray-800 cursor-pointer hover:text-blue-600'}`}
+                                                onClick={() => !item.done && handleStartEditCheck(item)}
+                                                title={!item.done ? 'Click to edit' : ''}
+                                            >{item.text}</span>
+                                        )}
+                                        <button onClick={() => handleDeleteCheck(item.id)} className="opacity-0 group-hover:opacity-100 p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition flex-shrink-0"><window.Icon name="trash-2" size={14} /></button>
                                     </div>
                                 );
                             })}
                         </div>
-                        <input className="w-full p-4 bg-gray-50 rounded-[1.5rem] border border-gray-100 outline-none text-[11px] font-black" placeholder={t('labels.define_objective')} value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && (setChecklist(prev => [...prev, { id: window.generateId('chk'), text: newCheckItem, done: false }]), setNewCheckItem(''))} />
+                        <input className="w-full p-4 bg-gray-50 rounded-[1.5rem] border border-gray-100 outline-none text-[11px] font-black" placeholder={t('labels.define_objective')} value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && newCheckItem.trim() && (setChecklist(prev => [...prev, { id: window.generateId('chk'), text: newCheckItem.trim(), done: false }]), setNewCheckItem(''))} />
                     </div>
 
                     <div><label className="block text-sm font-black text-black uppercase tracking-widest mb-6">{t('labels.attachments')}</label>
