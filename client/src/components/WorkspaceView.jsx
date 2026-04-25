@@ -699,9 +699,9 @@ User Request: ${aiInput}` : aiInput;
                                 {columns.filter(col => col.id !== 'backlog').map((col, index) => (
                                     <dnd.Draggable key={String(col.id || `col-${index}`)} draggableId={String(col.id || `col-${index}`)} index={index}>
                                         {(providedCol) => (
-                                            <div ref={providedCol.innerRef} {...providedCol.draggableProps} className={`w-full md:w-auto md:min-w-[310px] flex flex-col gap-4 group ${colThemeClasses} rounded-[2rem] p-4 h-full max-h-full overflow-hidden`}>
+                                            <div ref={providedCol.innerRef} {...providedCol.draggableProps} className={`w-full md:w-80 flex flex-col gap-4 group ${colThemeClasses} rounded-[2rem] p-4 h-full max-h-full overflow-hidden flex-shrink-0`}>
                                                 <div {...providedCol.dragHandleProps} className={`flex justify-between items-center px-4 border-b border-inherit pb-4 pt-2 flex-shrink-0`}>
-                                                    <div className="flex gap-2 items-center"><h3 className="text-sm font-black uppercase tracking-widest text-inherit">{col.title}</h3><button onClick={() => setViewArchivedCol(col.id)} className={`opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg ${colIconThemeClasses}`} title={t('labels.archived_cards')}><window.Icon name="archive" size={16}/></button></div>
+                                                    <div className="flex gap-2 items-center min-w-0"><h3 className="text-sm font-black uppercase tracking-widest text-inherit truncate">{col.title}</h3><button onClick={() => setViewArchivedCol(col.id)} className={`opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg ${colIconThemeClasses} flex-shrink-0`} title={t('labels.archived_cards')}><window.Icon name="archive" size={16}/></button></div>
                                                     <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
                                                         <button onClick={() => { 
                                                             const nc = { columnId: col.id, title: t('labels.new_task'), urgency: 'LOW', assignees: [user?.email], auditEvent: { user: user?.email || 'System', action: 'Created card' } };

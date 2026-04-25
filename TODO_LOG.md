@@ -56,3 +56,7 @@
 - **Date:** 2026-04-25
   **Action:** Live API Execution and Serialization Validation.
   **Outcome:** I performed live simulation testing of the Docs UI API runner using 'raw JSON', 'form-data', and 'x-www-form-urlencoded' payloads. By intercepting outgoing requests with a test receiver, I verified that the hardened 'handleSendRequest' logic correctly constructs multi-part boundaries for form-data and URL-encoded strings for form-url payloads. I confirmed that the 'Content-Type' header is surgically managed to prevent browser serialization errors, ensuring complex payloads reach their destination with 100% data fidelity.
+
+- **Date:** 2026-04-25
+  **Action:** Enforced strict Kanban column widths and layout bounds.
+  **Outcome:** The Boss reported that Kanban columns were growing horizontally whenever users created long column titles, misaligning the grid. I applied strict `flex-shrink-0 w-80 md:w-80` fixed widths to the `.droppable-column` containers inside `WorkspaceView.jsx`. Additionally, I wrapped the `<h3 className="truncate">` title elements inside a `min-w-0` layout box, forcing the browser's flex-engine to instantly truncate long text strings with ellipses rather than breaking the fixed Kanban width.
