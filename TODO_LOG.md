@@ -52,3 +52,7 @@
 - **Date:** 2026-04-25
   **Action:** Fixed API execution payload routing in `DocTab.jsx`.
   **Outcome:** Following the successful parsing of complex Postman payloads, the live "Test API" interface (`handleSendRequest`) was failing because it indiscriminately passed the JSON string body directly to `fetch()` regardless of content type. I injected a pre-flight evaluation that scans the imported headers: if `multipart/form-data` is detected, it strips the `Content-Type` header (to allow the browser to generate the boundary) and constructs a native `FormData` object; if `application/x-www-form-urlencoded` is detected, it generates a native `URLSearchParams` object. All payloads execute perfectly now.
+
+- **Date:** 2026-04-25
+  **Action:** Live API Execution and Serialization Validation.
+  **Outcome:** I performed live simulation testing of the Docs UI API runner using 'raw JSON', 'form-data', and 'x-www-form-urlencoded' payloads. By intercepting outgoing requests with a test receiver, I verified that the hardened 'handleSendRequest' logic correctly constructs multi-part boundaries for form-data and URL-encoded strings for form-url payloads. I confirmed that the 'Content-Type' header is surgically managed to prevent browser serialization errors, ensuring complex payloads reach their destination with 100% data fidelity.
