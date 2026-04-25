@@ -65,13 +65,23 @@ const workspaceSchema = new mongoose.Schema({
     value: String,
     iv: String,
     authTag: String
-  }]
+  }],
+  bitbucketRepo: { type: String, default: '' },
+  bitbucketBranchPrefix: { type: String, default: 'feature/' },
+  bitbucketDefaultBranch: { type: String, default: 'main' },
+  bitbucketAuthEmail: { type: String, default: '' },
+  bitbucketApiTokenEnc: {
+    iv: String,
+    authTag: String,
+    value: String
+  }
 }, { timestamps: true });
 
 const taskSchema = new mongoose.Schema({
   workspaceId: { type: String, required: true },
   columnId: String,
   epic: { type: String },
+  createdBy: { type: String },
   title: { type: String, required: true },
   archived: { type: Boolean, default: false },
   content: String,
@@ -101,7 +111,12 @@ const taskSchema = new mongoose.Schema({
     name: String,
     dataUrl: String,
     size: String
-  }]
+  }],
+  bitbucketBranch: {
+    name: String,
+    url: String,
+    linkedAt: Date
+  }
 }, { timestamps: true, optimisticConcurrency: true });
 
 userSchema.set('toJSON', { virtuals: true });

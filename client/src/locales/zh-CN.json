@@ -62,7 +62,14 @@
     "add_secret": "添加机密信息",
     "check_all": "全选",
     "new_task": "新任务",
-    "submit_intel": "提交情报"
+    "submit_intel": "提交情报",
+    "create_branch": "创建分支",
+    "unbind_branch": "解除分支绑定",
+    "confirm_and_create_branch": "确认并创建分支",
+    "creating_branch": "创建中...",
+    "confirm_unbind_branch": "解除分支绑定？",
+    "edit_settings": "编辑设置",
+    "link_branch": "关联分支"
   },
   "labels": {
     "email": "电子邮件",
@@ -170,7 +177,24 @@
     "url": "URL (可选)",
     "system": "系统",
     "attachment_preview": "附件预览",
-    "new_task": "新任务"
+    "new_task": "新任务",
+    "bitbucket_settings": "Bitbucket 设置",
+    "bitbucket_repo": "仓库 (工作区/仓库标识)",
+    "bitbucket_branch_prefix": "分支前缀",
+    "create_bitbucket_branch": "创建 Bitbucket 分支",
+    "open_bitbucket_branch": "在 Bitbucket 中打开",
+    "bitbucket_default_branch": "默认源分支",
+    "source_branch": "源分支",
+    "bitbucket_app_username": "Bitbucket 用户名",
+    "bitbucket_app_password": "应用密码",
+    "bitbucket_app_password_set": "已设置 — 留空保持不变",
+    "create_app_password": "创建应用密码 →",
+    "bitbucket_auth_email": "Atlassian 邮箱",
+    "bitbucket_api_token": "API 令牌",
+    "bitbucket_api_token_set": "已设置 — 留空保持不变",
+    "create_api_token": "创建 Atlassian API 令牌 →",
+    "link_bitbucket_branch_title": "关联 Bitbucket 分支",
+    "branch_name": "新分支名称"
   },
   "alerts": {
     "welcome_back": "欢迎回来，{name}！🚀",
@@ -239,6 +263,16 @@
     "no_communication": "尚无评论记录。",
     "no_archived_cards": "此列中没有已归档的卡片。",
     "attachment_preview": "附件预览",
-    "welcome_stats": "欢迎！您有 {total} 个指派任务，{expiring} 个即将过期，以及 {backlog} 个在待办清单中。"
+    "welcome_stats": "欢迎！您有 {total} 个指派任务，{expiring} 个即将过期，以及 {backlog} 个在待办清单中。",
+    "bitbucket_help": "将此工作区连接到 Bitbucket Cloud 仓库，使卡片创建者可以直接从卡片创建并关联一个功能分支。",
+    "bitbucket_saved": "Bitbucket 设置已保存。",
+    "branch_linked": "分支已绑定：{name}",
+    "branch_unlinked": "分支已解除绑定。",
+    "bitbucket_setup_first": "请先配置您的 Bitbucket 仓库，然后再次点击\"创建分支\"。",
+    "create_branch_help": "Noobieteam 将使用您配置的应用密码在 Bitbucket 上创建此分支，然后将其链接到此卡片。",
+    "branch_created": "分支已创建：{name}",
+    "bitbucket_credentials_help": "需要 API 凭据才能在 Bitbucket 上实际创建分支。",
+    "bitbucket_credentials_perms": "将令牌范围限定为 Bitbucket，并授予仓库读写权限。",
+    "confirm_unbind_branch_message": "确定要将分支 {name} 与此卡片解除绑定吗？Bitbucket 上的分支不会被删除。"
   }
 }

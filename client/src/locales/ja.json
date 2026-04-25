@@ -54,7 +54,14 @@
     "decrypting": "復号中...",
     "encrypt_archive": "暗号化して保存",
     "new_task": "新しいタスク",
-    "submit_intel": "情報を送信"
+    "submit_intel": "情報を送信",
+    "create_branch": "ブランチを作成",
+    "unbind_branch": "ブランチの紐付け解除",
+    "confirm_and_create_branch": "確認してブランチを作成",
+    "creating_branch": "作成中...",
+    "confirm_unbind_branch": "ブランチの紐付けを解除しますか？",
+    "edit_settings": "設定を編集",
+    "link_branch": "ブランチを連携"
   },
   "labels": {
     "email": "メールアドレス",
@@ -150,7 +157,24 @@
     "url": "URL (任意)",
     "mission_chatter_title": "ミッションチャット",
     "attachment_preview": "添付ファイルのプレビュー",
-    "new_task": "新しいタスク"
+    "new_task": "新しいタスク",
+    "bitbucket_settings": "Bitbucket設定",
+    "bitbucket_repo": "リポジトリ (workspace/repo-slug)",
+    "bitbucket_branch_prefix": "ブランチプレフィックス",
+    "create_bitbucket_branch": "Bitbucketブランチを作成",
+    "open_bitbucket_branch": "Bitbucketで開く",
+    "bitbucket_default_branch": "デフォルトのソースブランチ",
+    "source_branch": "ソースブランチ",
+    "bitbucket_app_username": "Bitbucketユーザー名",
+    "bitbucket_app_password": "アプリパスワード",
+    "bitbucket_app_password_set": "設定済み — 空欄で保持",
+    "create_app_password": "アプリパスワードを作成 →",
+    "bitbucket_auth_email": "Atlassianメール",
+    "bitbucket_api_token": "APIトークン",
+    "bitbucket_api_token_set": "設定済み — 空欄で保持",
+    "create_api_token": "Atlassian APIトークンを作成 →",
+    "link_bitbucket_branch_title": "Bitbucketブランチを連携",
+    "branch_name": "新しいブランチ名"
   },
   "alerts": {
     "welcome_back": "お帰りなさい、{name}さん！🚀",
@@ -210,6 +234,16 @@
     "overwrite_conflict": "競合：このカードは最近別のユーザーによって変更されました。変更内容を上書きしないよう、ページを更新してください。",
     "no_communication": "通信ログはありません。",
     "no_archived_cards": "この列にアーカイブされたカードはありません。",
-    "welcome_stats": "ようこそ！ {total} 件の割り当てられたタスク、 {expiring} 件の期限間近、 {backlog} 件のバックログがあります。"
+    "welcome_stats": "ようこそ！ {total} 件の割り当てられたタスク、 {expiring} 件の期限間近、 {backlog} 件のバックログがあります。",
+    "bitbucket_help": "このワークスペースをBitbucket Cloudリポジトリに接続すると、カード作成者はカードから直接フィーチャーブランチを作成して紐付けできます。",
+    "bitbucket_saved": "Bitbucket設定を保存しました。",
+    "branch_linked": "ブランチを紐付けました：{name}",
+    "branch_unlinked": "ブランチの紐付けを解除しました。",
+    "bitbucket_setup_first": "まずBitbucketリポジトリを設定してから、もう一度「ブランチを作成」をクリックしてください。",
+    "create_branch_help": "設定されたアプリパスワードを使用してBitbucketにこのブランチを作成し、このカードに紐付けます。",
+    "branch_created": "ブランチを作成しました：{name}",
+    "bitbucket_credentials_help": "Bitbucketで実際にブランチを作成するにはAPI認証情報が必要です。",
+    "bitbucket_credentials_perms": "トークンのスコープをBitbucketに限定し、リポジトリの読み書き権限を付与してください。",
+    "confirm_unbind_branch_message": "{name} をこのカードから紐付け解除しますか？Bitbucket上のブランチは削除されません。"
   }
 }

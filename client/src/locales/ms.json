@@ -54,7 +54,14 @@
     "decrypting": "Menyahsulit...",
     "encrypt_archive": "Sulit & Arkib",
     "new_task": "Tugasan Baru",
-    "submit_intel": "Hantar Intel"
+    "submit_intel": "Hantar Intel",
+    "create_branch": "Cipta Cawangan",
+    "unbind_branch": "Lepaskan Cawangan",
+    "confirm_and_create_branch": "Sahkan & Cipta Cawangan",
+    "creating_branch": "Mencipta...",
+    "confirm_unbind_branch": "Lepaskan Cawangan?",
+    "edit_settings": "Edit Tetapan",
+    "link_branch": "Pautkan Cawangan"
   },
   "labels": {
     "email": "Emel",
@@ -150,7 +157,24 @@
     "url": "URL (Pilihan)",
     "mission_chatter_title": "Sembang Misi",
     "attachment_preview": "Pratonton Lampiran",
-    "new_task": "Tugasan Baru"
+    "new_task": "Tugasan Baru",
+    "bitbucket_settings": "Tetapan Bitbucket",
+    "bitbucket_repo": "Repositori (workspace/repo-slug)",
+    "bitbucket_branch_prefix": "Awalan Cawangan",
+    "create_bitbucket_branch": "Cipta Cawangan Bitbucket",
+    "open_bitbucket_branch": "Buka dalam Bitbucket",
+    "bitbucket_default_branch": "Cawangan Sumber Lalai",
+    "source_branch": "Cawangan Sumber",
+    "bitbucket_app_username": "Nama Pengguna Bitbucket",
+    "bitbucket_app_password": "App Password",
+    "bitbucket_app_password_set": "telah ditetapkan — biarkan kosong untuk kekal",
+    "create_app_password": "Cipta app password →",
+    "bitbucket_auth_email": "E-mel Atlassian",
+    "bitbucket_api_token": "Token API",
+    "bitbucket_api_token_set": "telah ditetapkan — biarkan kosong untuk kekal",
+    "create_api_token": "Cipta token API Atlassian →",
+    "link_bitbucket_branch_title": "Pautkan Cawangan Bitbucket",
+    "branch_name": "Nama Cawangan Baru"
   },
   "alerts": {
     "welcome_back": "Selamat kembali, {name}! 🚀",
@@ -210,6 +234,16 @@
     "overwrite_conflict": "Konflik: Kad ini telah diubah oleh pengguna lain baru-baru ini. Sila segar semula untuk mengelakkan menindih kerja mereka.",
     "no_communication": "Tiada log komunikasi.",
     "no_archived_cards": "Tiada kad diarkibkan dalam lajur ini.",
-    "welcome_stats": "Selamat datang! Anda mempunyai {total} tugasan yang diberikan, {expiring} akan tamat tempoh tidak lama lagi, dan {backlog} dalam tunggakan."
+    "welcome_stats": "Selamat datang! Anda mempunyai {total} tugasan yang diberikan, {expiring} akan tamat tempoh tidak lama lagi, dan {backlog} dalam tunggakan.",
+    "bitbucket_help": "Sambungkan ruang kerja ini ke repositori Bitbucket Cloud supaya pencipta kad boleh mencipta dan memautkan cawangan ciri terus daripada kad.",
+    "bitbucket_saved": "Tetapan Bitbucket disimpan.",
+    "branch_linked": "Cawangan dipautkan: {name}",
+    "branch_unlinked": "Cawangan dilepaskan.",
+    "bitbucket_setup_first": "Konfigurasikan repositori Bitbucket anda terlebih dahulu, kemudian klik Cipta Cawangan sekali lagi.",
+    "create_branch_help": "Noobieteam akan mencipta cawangan ini di Bitbucket menggunakan app password yang anda tetapkan, kemudian memautkannya ke kad ini.",
+    "branch_created": "Cawangan dicipta: {name}",
+    "bitbucket_credentials_help": "Bukti kelayakan API diperlukan untuk benar-benar mencipta cawangan di Bitbucket.",
+    "bitbucket_credentials_perms": "Hadkan skop token kepada Bitbucket dan berikan akses baca/tulis repositori.",
+    "confirm_unbind_branch_message": "Lepaskan {name} daripada kad ini? Cawangan pada Bitbucket tidak akan dipadamkan."
   }
 }

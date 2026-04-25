@@ -54,7 +54,14 @@
     "decrypting": "解密中...",
     "encrypt_archive": "加密並歸檔",
     "new_task": "新任務",
-    "submit_intel": "提交情報"
+    "submit_intel": "提交情報",
+    "create_branch": "建立分支",
+    "unbind_branch": "解除分支綁定",
+    "confirm_and_create_branch": "確認並建立分支",
+    "creating_branch": "建立中...",
+    "confirm_unbind_branch": "解除分支綁定？",
+    "edit_settings": "編輯設定",
+    "link_branch": "連結分支"
   },
   "labels": {
     "email": "電子郵件",
@@ -150,7 +157,24 @@
     "url": "URL (可選)",
     "mission_chatter_title": "任務聊天",
     "attachment_preview": "附件預覽",
-    "new_task": "新任務"
+    "new_task": "新任務",
+    "bitbucket_settings": "Bitbucket 設定",
+    "bitbucket_repo": "倉庫 (工作區/倉庫識別碼)",
+    "bitbucket_branch_prefix": "分支前綴",
+    "create_bitbucket_branch": "建立 Bitbucket 分支",
+    "open_bitbucket_branch": "在 Bitbucket 中開啟",
+    "bitbucket_default_branch": "預設來源分支",
+    "source_branch": "來源分支",
+    "bitbucket_app_username": "Bitbucket 使用者名稱",
+    "bitbucket_app_password": "應用程式密碼",
+    "bitbucket_app_password_set": "已設定 — 留空保持不變",
+    "create_app_password": "建立應用程式密碼 →",
+    "bitbucket_auth_email": "Atlassian 電子郵件",
+    "bitbucket_api_token": "API 權杖",
+    "bitbucket_api_token_set": "已設定 — 留空保持不變",
+    "create_api_token": "建立 Atlassian API 權杖 →",
+    "link_bitbucket_branch_title": "連結 Bitbucket 分支",
+    "branch_name": "新分支名稱"
   },
   "alerts": {
     "welcome_back": "歡迎回來，{name}！🚀",
@@ -210,6 +234,16 @@
     "overwrite_conflict": "衝突：此卡片最近已被其他用戶修改。請刷新以避免覆蓋他們的工作。",
     "no_communication": "尚無評論記錄。",
     "no_archived_cards": "此列中沒有已歸檔的卡片。",
-    "welcome_stats": "歡迎！您有 {total} 個指派任務，{expiring} 個即將過期，以及 {backlog} 個在待辦清單中。"
+    "welcome_stats": "歡迎！您有 {total} 個指派任務，{expiring} 個即將過期，以及 {backlog} 個在待辦清單中。",
+    "bitbucket_help": "將此工作區連結到 Bitbucket Cloud 倉庫，讓卡片建立者可以直接從卡片建立並關聯一個功能分支。",
+    "bitbucket_saved": "Bitbucket 設定已儲存。",
+    "branch_linked": "分支已綁定：{name}",
+    "branch_unlinked": "分支已解除綁定。",
+    "bitbucket_setup_first": "請先配置您的 Bitbucket 倉庫，然後再次點擊「建立分支」。",
+    "create_branch_help": "Noobieteam 將使用您設定的應用程式密碼在 Bitbucket 上建立此分支，然後將其連結到此卡片。",
+    "branch_created": "分支已建立：{name}",
+    "bitbucket_credentials_help": "需要 API 憑證才能在 Bitbucket 上實際建立分支。",
+    "bitbucket_credentials_perms": "將權杖範圍限定為 Bitbucket，並授予倉庫讀寫存取權。",
+    "confirm_unbind_branch_message": "確定要將分支 {name} 與此卡片解除綁定嗎？Bitbucket 上的分支不會被刪除。"
   }
 }

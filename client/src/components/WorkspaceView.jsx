@@ -325,6 +325,13 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
     };
     const [aiConfig, setAiConfig] = React.useState({ model: 'gemini-3-flash-preview', apiKey: '[REDACTED_API_KEY]', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/' });
     const [isAISettingsOpen, setIsAISettingsOpen] = React.useState(false);
+    const [isBitbucketSettingsOpen, setIsBitbucketSettingsOpen] = React.useState(false);
+    const [pendingBranchAction, setPendingBranchAction] = React.useState(null);
+    const [bitbucketRepo, setBitbucketRepo] = React.useState(workspace.bitbucketRepo || '');
+    const [bitbucketBranchPrefix, setBitbucketBranchPrefix] = React.useState(workspace.bitbucketBranchPrefix || 'feature/');
+    const [bitbucketDefaultBranch, setBitbucketDefaultBranch] = React.useState(workspace.bitbucketDefaultBranch || 'main');
+    const [bitbucketAuthEmail, setBitbucketAuthEmail] = React.useState(workspace.bitbucketAuthEmail || '');
+    const [bitbucketApiTokenPlain, setBitbucketApiTokenPlain] = React.useState('');
     const [filterKeyword, setFilterKeyword] = React.useState('');
     const [filterAssignee, setFilterAssignee] = React.useState('');
     const [filterEpic, setFilterEpic] = React.useState('');
@@ -894,7 +901,7 @@ User Request: ${aiInput}` : aiInput;
                                 </dnd.Droppable>
                                 <div className="p-3 border-t border-gray-200 bg-gray-100/50 rounded-b-[2rem]">
                                     <button onClick={() => { 
-                                        const nc = { columnId: 'backlog', title: t('labels.new_backlog_item'), urgency: 'LOW', assignees: [user?.email], auditEvent: { user: user?.email || 'System', action: 'Created backlog card' } };
+                                        const nc = { columnId: 'backlog', title: t('labels.new_backlog_item'), urgency: 'LOW', assignees: [user?.email], createdBy: user?.email, auditEvent: { user: user?.email || 'System', action: 'Created backlog card' } };
                                         fetch(`/api/workspaces/${workspace.id}/tasks`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(nc) }).then(r=>r.json()).then(task => { const resId = task.id || task._id; const finalTask = { ...task, id: resId }; setCards(prev => [...prev, finalTask]); setEditingCard(finalTask); }); 
                                     }} className="w-full py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition shadow-sm flex items-center justify-center gap-2">
                                         <window.Icon name="plus" size={14} /> {t('actions.add_to_backlog')}
@@ -913,7 +920,7 @@ User Request: ${aiInput}` : aiInput;
                                                     <div className="flex gap-2 items-center min-w-0"><h3 className="text-sm font-black uppercase tracking-widest text-inherit truncate">{col.title}</h3><button onClick={() => setViewArchivedCol(col.id)} className={`opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg ${colIconThemeClasses} flex-shrink-0`} title={t('labels.archived_cards')}><window.Icon name="archive" size={16}/></button></div>
                                                     <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition">
                                                         <button onClick={() => { 
-                                                            const nc = { columnId: col.id, title: t('labels.new_task'), urgency: 'LOW', assignees: [user?.email], auditEvent: { user: user?.email || 'System', action: 'Created card' } };
+                                                            const nc = { columnId: col.id, title: t('labels.new_task'), urgency: 'LOW', assignees: [user?.email], createdBy: user?.email, auditEvent: { user: user?.email || 'System', action: 'Created card' } };
                                                             fetch(`/api/workspaces/${workspace.id}/tasks`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(nc) }).then(r=>r.json()).then(task => { const resId = task.id || task._id; const finalTask = { ...task, id: resId }; setCards(prev => [...prev, finalTask]); setEditingCard(finalTask); }); 
                                                         }} className={`p-1.5 rounded-lg transition ${colIconThemeClasses}`} title={t('actions.new_task')}><window.Icon name="plus-circle" size={18} /></button>
                                                         {col.id !== 'todo' && <button onClick={() => showConfirm(t('actions.erase_stage'), t('alerts.confirm_erase_stage', {name: col.title}), async () => { 
@@ -944,7 +951,8 @@ User Request: ${aiInput}` : aiInput;
                                                         return <window.Avatar key={email} label={window.getInitials(email)} src={m.avatar} size="sm" active />;
                                                     })}
                                                 </div>
-                                                <div className="flex gap-2">
+                                                <div className="flex gap-2 items-center">
+                                                    {card.bitbucketBranch?.name && <span className="text-[#0052CC]" title={card.bitbucketBranch.name}><window.Icon name="git-branch" size={14} /></span>}
                                                     {card.attachments?.length > 0 && <window.Icon name="paperclip" size={14} />}
                                                     {card.content && <window.Icon name="align-left" size={14} />}
                                                     {card.comments?.length > 0 && <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400"><window.Icon name="message-circle" size={14} /> {card.comments.length}</div>}
@@ -970,7 +978,7 @@ User Request: ${aiInput}` : aiInput;
                     </dnd.DragDropContext>
                 </main>
             ) : tab === 'vault' ? <window.VaultTab workspace={workspace} user={user} onUpdate={updateWorkspace} onUpdateUser={onUpdateUser} /> : tab === 'docs' ? <window.DocTab workspaceId={workspace?.id || workspace?._id} user={user} /> : null}
-            {editingCard && <window.CardModal card={editingCard} user={user} members={members} allUsers={allUsers} socket={socketRef.current} workspaceId={workspace.id || workspace._id} onClose={() => setEditingCard(null)} onSave={async (upd) => { 
+            {editingCard && <window.CardModal card={editingCard} user={user} members={members} allUsers={allUsers} socket={socketRef.current} workspaceId={workspace.id || workspace._id} workspace={workspace} onConfigureBitbucket={(afterSave) => { setPendingBranchAction(() => afterSave || null); setBitbucketRepo(workspace.bitbucketRepo || ''); setBitbucketBranchPrefix(workspace.bitbucketBranchPrefix || 'feature/'); setBitbucketDefaultBranch(workspace.bitbucketDefaultBranch || 'main'); setBitbucketAuthEmail(workspace.bitbucketAuthEmail || ''); setBitbucketApiTokenPlain(''); setIsBitbucketSettingsOpen(true); }} onPatch={(updated) => { const uid = updated.id || updated._id; setCards(prev => (prev || []).map(c => (c && (c.id === uid || c._id === uid)) ? { ...c, ...updated, id: uid } : c)); setEditingCard(prev => prev && (prev.id === uid || prev._id === uid) ? { ...prev, ...updated, id: uid } : prev); }} onClose={() => setEditingCard(null)} onSave={async (upd) => {
                 const cardId = editingCard.id || editingCard._id; 
                 const res = await fetch(`/api/tasks/${cardId}`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify(upd) }); 
                 const updatedTask = await res.json(); 
@@ -1132,6 +1140,69 @@ User Request: ${aiInput}` : aiInput;
                     <div>
                         <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.model_id')}</label>
                         <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-xs font-bold" value={aiConfig.model} readOnly placeholder="gpt-4o" />
+                    </div>
+                </div>
+            </window.GlobalModal>
+
+            <window.GlobalModal isOpen={isBitbucketSettingsOpen} onClose={() => { setIsBitbucketSettingsOpen(false); setPendingBranchAction(null); }} title={t('labels.bitbucket_settings') || 'Bitbucket Settings'} footer={
+                <div className="flex gap-2">
+                    <button onClick={() => { setIsBitbucketSettingsOpen(false); setPendingBranchAction(null); }} className="bg-gray-100 text-gray-700 px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest">{t('actions.cancel')}</button>
+                    <button onClick={async () => {
+                        const payload = {
+                            bitbucketRepo: bitbucketRepo.trim(),
+                            bitbucketBranchPrefix: bitbucketBranchPrefix.trim() || 'feature/',
+                            bitbucketDefaultBranch: bitbucketDefaultBranch.trim() || 'main',
+                            bitbucketAuthEmail: bitbucketAuthEmail.trim()
+                        };
+                        if (bitbucketApiTokenPlain.length > 0) {
+                            payload.bitbucketApiTokenPlain = bitbucketApiTokenPlain;
+                        }
+                        const res = await fetch(`/api/workspaces/${workspace.id || workspace._id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                        const updated = await res.json().catch(() => null);
+                        workspace.bitbucketRepo = bitbucketRepo.trim();
+                        workspace.bitbucketBranchPrefix = bitbucketBranchPrefix.trim() || 'feature/';
+                        workspace.bitbucketDefaultBranch = bitbucketDefaultBranch.trim() || 'main';
+                        workspace.bitbucketAuthEmail = bitbucketAuthEmail.trim();
+                        if (updated && typeof updated.bitbucketApiTokenSet === 'boolean') {
+                            workspace.bitbucketApiTokenSet = updated.bitbucketApiTokenSet;
+                        }
+                        setBitbucketApiTokenPlain('');
+                        setIsBitbucketSettingsOpen(false);
+                        showToast(t('alerts.bitbucket_saved') || 'Bitbucket settings saved.', 'success');
+                        if (typeof pendingBranchAction === 'function') {
+                            const action = pendingBranchAction;
+                            setPendingBranchAction(null);
+                            try { await action(); } catch (e) { console.error(e); }
+                        }
+                    }} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl">{pendingBranchAction ? (t('actions.confirm_and_create_branch') || 'Confirm & Create Branch') : (t('actions.save_and_sync'))}</button>
+                </div>
+            }>
+                <div className="space-y-4">
+                    <p className="text-[10px] text-gray-400 font-bold leading-relaxed">{t('alerts.bitbucket_help') || 'Set the Bitbucket Cloud repository this workspace links to. Card creators will get a "Create Branch" button on their cards that opens the Bitbucket branch creation page pre-filled.'}</p>
+                    <div>
+                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.bitbucket_repo') || 'Repository (workspace/repo-slug)'}</label>
+                        <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-xs font-bold" value={bitbucketRepo} onChange={e => setBitbucketRepo(e.target.value)} placeholder="myteam/myrepo" />
+                    </div>
+                    <div>
+                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.bitbucket_branch_prefix') || 'Branch Prefix'}</label>
+                        <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-xs font-bold" value={bitbucketBranchPrefix} onChange={e => setBitbucketBranchPrefix(e.target.value)} placeholder="feature/" />
+                    </div>
+                    <div>
+                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.bitbucket_default_branch') || 'Default Source Branch'}</label>
+                        <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-xs font-bold" value={bitbucketDefaultBranch} onChange={e => setBitbucketDefaultBranch(e.target.value)} placeholder="main" />
+                    </div>
+                    <div className="pt-3 border-t border-gray-100">
+                        <p className="text-[10px] text-gray-400 font-bold leading-relaxed mb-3">
+                            {t('alerts.bitbucket_credentials_help') || 'API credentials are required to actually create branches on Bitbucket.'}
+                            {' '}
+                            <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener noreferrer" className="text-[#0052CC] hover:underline font-black">{t('labels.create_api_token') || 'Create an Atlassian API token →'}</a>
+                            {' '}
+                            <span className="block mt-1">{t('alerts.bitbucket_credentials_perms') || 'Scope the token to Bitbucket and grant repository read/write access.'}</span>
+                        </p>
+                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.bitbucket_auth_email') || 'Atlassian Email'}</label>
+                        <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-xs font-bold mb-4" value={bitbucketAuthEmail} onChange={e => setBitbucketAuthEmail(e.target.value)} placeholder="you@example.com" />
+                        <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.bitbucket_api_token') || 'API Token'} {workspace.bitbucketApiTokenSet && <span className="text-emerald-500 normal-case font-bold">({t('labels.bitbucket_api_token_set') || 'set — leave blank to keep'})</span>}</label>
+                        <input type="password" autoComplete="off" className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-xs font-bold font-mono" value={bitbucketApiTokenPlain} onChange={e => setBitbucketApiTokenPlain(e.target.value)} placeholder={workspace.bitbucketApiTokenSet ? '••••••••••••' : 'ATATTxxxxxxxxxxxxxxxx'} />
                     </div>
                 </div>
             </window.GlobalModal>

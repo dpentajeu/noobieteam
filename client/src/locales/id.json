@@ -54,7 +54,14 @@
     "decrypting": "Mendekripsi...",
     "encrypt_archive": "Enkripsi & Arsipkan",
     "new_task": "Tugas Baru",
-    "submit_intel": "Kirim Intel"
+    "submit_intel": "Kirim Intel",
+    "create_branch": "Buat Cabang",
+    "unbind_branch": "Lepas Cabang",
+    "confirm_and_create_branch": "Konfirmasi & Buat Cabang",
+    "creating_branch": "Membuat...",
+    "confirm_unbind_branch": "Lepas Cabang?",
+    "edit_settings": "Edit Pengaturan",
+    "link_branch": "Tautkan Cabang"
   },
   "labels": {
     "email": "Email",
@@ -150,7 +157,24 @@
     "url": "URL (Opsional)",
     "mission_chatter_title": "Obrolan Misi",
     "attachment_preview": "Pratinjau Lampiran",
-    "new_task": "Tugas Baru"
+    "new_task": "Tugas Baru",
+    "bitbucket_settings": "Pengaturan Bitbucket",
+    "bitbucket_repo": "Repositori (workspace/repo-slug)",
+    "bitbucket_branch_prefix": "Awalan Cabang",
+    "create_bitbucket_branch": "Buat Cabang Bitbucket",
+    "open_bitbucket_branch": "Buka di Bitbucket",
+    "bitbucket_default_branch": "Cabang Sumber Default",
+    "source_branch": "Cabang Sumber",
+    "bitbucket_app_username": "Username Bitbucket",
+    "bitbucket_app_password": "App Password",
+    "bitbucket_app_password_set": "tersimpan — kosongkan untuk mempertahankan",
+    "create_app_password": "Buat app password →",
+    "bitbucket_auth_email": "Email Atlassian",
+    "bitbucket_api_token": "Token API",
+    "bitbucket_api_token_set": "tersimpan — kosongkan untuk mempertahankan",
+    "create_api_token": "Buat token API Atlassian →",
+    "link_bitbucket_branch_title": "Tautkan Cabang Bitbucket",
+    "branch_name": "Nama Cabang Baru"
   },
   "alerts": {
     "welcome_back": "Selamat datang kembali, {name}! 🚀",
@@ -210,6 +234,16 @@
     "overwrite_conflict": "Konflik: Kartu ini telah diubah oleh pengguna lain baru-baru ini. Harap segarkan untuk menghindari menimpa pekerjaan mereka.",
     "no_communication": "Belum ada komunikasi.",
     "no_archived_cards": "Tidak ada kartu yang diarsipkan di kolom ini.",
-    "welcome_stats": "Selamat datang! Anda memiliki {total} tugas yang diberikan, {expiring} segera berakhir, dan {backlog} di backlog."
+    "welcome_stats": "Selamat datang! Anda memiliki {total} tugas yang diberikan, {expiring} segera berakhir, dan {backlog} di backlog.",
+    "bitbucket_help": "Hubungkan ruang kerja ini ke repositori Bitbucket Cloud sehingga pembuat kartu dapat membuat dan menautkan cabang fitur langsung dari kartu.",
+    "bitbucket_saved": "Pengaturan Bitbucket disimpan.",
+    "branch_linked": "Cabang ditautkan: {name}",
+    "branch_unlinked": "Cabang dilepaskan.",
+    "bitbucket_setup_first": "Konfigurasikan repositori Bitbucket Anda terlebih dahulu, lalu klik Buat Cabang lagi.",
+    "create_branch_help": "Noobieteam akan membuat cabang ini di Bitbucket menggunakan app password yang Anda konfigurasi, lalu menautkannya ke kartu ini.",
+    "branch_created": "Cabang dibuat: {name}",
+    "bitbucket_credentials_help": "Kredensial API diperlukan untuk benar-benar membuat cabang di Bitbucket.",
+    "bitbucket_credentials_perms": "Batasi cakupan token ke Bitbucket dan berikan akses baca/tulis repositori.",
+    "confirm_unbind_branch_message": "Lepaskan {name} dari kartu ini? Cabang di Bitbucket tidak akan dihapus."
   }
 }

@@ -1,4 +1,4 @@
-window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, socket, workspaceId }) => {
+window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, socket, workspaceId, workspace, onPatch, onConfigureBitbucket }) => {
     
     React.useEffect(() => {
         if (socket && card && (card.id || card._id)) {
@@ -116,6 +116,107 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, 
 
     const colors = { LOW: 'bg-blue-400', MED: 'bg-yellow-400', HIGH: 'bg-red-500' };
     const qaColors = { NONE: 'bg-gray-400', PENDING: 'bg-amber-400', PASSED: 'bg-emerald-500', FAILED: 'bg-red-500' };
+
+    const [bitbucketBranch, setBitbucketBranch] = React.useState(card.bitbucketBranch || null);
+    const cardCreator = card.createdBy || card.auditTrail?.[0]?.user;
+    const isCardCreator = !!(user?.email && cardCreator === user.email);
+    const canCreateBranch = !!(workspace && isCardCreator && !bitbucketBranch?.name);
+    const canUnbindBranch = !!(bitbucketBranch?.name && isCardCreator);
+
+    const persistBranchPatch = async (patch, action) => {
+        const cardId = card.id || card._id;
+        try {
+            const res = await fetch(`/api/tasks/${cardId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...patch, auditEvent: { user: user?.email || 'System', action } })
+            });
+            if (res.ok && typeof onPatch === 'function') {
+                const updated = await res.json();
+                onPatch(updated);
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    const [isLinkBranchOpen, setIsLinkBranchOpen] = React.useState(false);
+    const [linkBranchName, setLinkBranchName] = React.useState('');
+    const [linkSourceBranch, setLinkSourceBranch] = React.useState('');
+    const [linkBusy, setLinkBusy] = React.useState(false);
+    const [linkError, setLinkError] = React.useState('');
+
+    const getSuggestedBranchName = () => {
+        const slug = (title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 60);
+        const prefix = (workspace?.bitbucketBranchPrefix || 'feature/').replace(/^\/+|\/+$/g, '') + '/';
+        if (slug) return `${prefix}${slug}`;
+        const cardShortId = String(card.id || card._id || 'task').slice(-6);
+        return `${prefix}task-${cardShortId}`;
+    };
+
+    const isBitbucketReady = () => !!(workspace?.bitbucketRepo && workspace?.bitbucketAuthEmail && workspace?.bitbucketApiTokenSet);
+
+    const openLinkBranchModal = () => {
+        if (!isBitbucketReady()) {
+            if (typeof onConfigureBitbucket === 'function') {
+                onConfigureBitbucket(() => {
+                    setLinkBranchName(getSuggestedBranchName());
+                    setLinkSourceBranch(workspace?.bitbucketDefaultBranch || 'main');
+                    setLinkError('');
+                    setIsLinkBranchOpen(true);
+                });
+            }
+            return;
+        }
+        setLinkBranchName(getSuggestedBranchName());
+        setLinkSourceBranch(workspace?.bitbucketDefaultBranch || 'main');
+        setLinkError('');
+        setIsLinkBranchOpen(true);
+    };
+
+    const createBranchOnBitbucket = async () => {
+        const branchName = (linkBranchName || '').trim();
+        const sourceBranch = (linkSourceBranch || '').trim();
+        if (!branchName || !sourceBranch || !workspace?.bitbucketRepo) return;
+        setLinkBusy(true);
+        setLinkError('');
+        try {
+            const wsId = workspace.id || workspace._id;
+            const res = await fetch(`/api/workspaces/${wsId}/branches`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ branchName, sourceBranch })
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setLinkError(body.error || `Bitbucket returned ${res.status}`);
+                setLinkBusy(false);
+                return;
+            }
+            const newBinding = { name: body.name || branchName, url: body.url, linkedAt: new Date().toISOString() };
+            setBitbucketBranch(newBinding);
+            setIsLinkBranchOpen(false);
+            setLinkBusy(false);
+            await persistBranchPatch({ bitbucketBranch: newBinding }, `Created & linked Bitbucket branch: ${newBinding.name} (from ${sourceBranch})`);
+            showToast(t('alerts.branch_created', { name: newBinding.name }) || `Branch created: ${newBinding.name}`, 'success');
+        } catch (e) {
+            setLinkError(e.message || 'Network error');
+            setLinkBusy(false);
+        }
+    };
+
+    const unbindBranch = async () => {
+        const prevName = bitbucketBranch?.name;
+        setBitbucketBranch(null);
+        await persistBranchPatch({ bitbucketBranch: null }, `Unlinked Bitbucket branch: ${prevName || ''}`);
+        showToast(t('alerts.branch_unlinked') || 'Branch unlinked.', 'success');
+    };
+
+    const confirmUnbindBranch = () => {
+        const name = bitbucketBranch?.name || '';
+        const title = t('actions.confirm_unbind_branch') || 'Unlink Branch?';
+        const msgTemplate = t('alerts.confirm_unbind_branch_message') || 'Unlink {name} from this card? The branch on Bitbucket will not be deleted.';
+        const message = msgTemplate.replace('{name}', name);
+        showConfirm(title, message, () => { unbindBranch(); });
+    };
 
     const handleToggleCheck = React.useCallback((id) => {
         setChecklist(prev => {
@@ -367,14 +468,69 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, 
             </div>
         </div>
     )}
-    <div className="flex justify-between items-center">
+    <div className="flex justify-between items-center gap-2 flex-wrap">
         <button onClick={() => setShowAudit(!showAudit)} className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 transition text-[10px] font-black uppercase tracking-widest">
             <window.Icon name={showAudit ? "chevron-up" : "chevron-down"} size={14} /> {t('labels.audit_trail')}
         </button>
-        <button onClick={() => onSave({ __v: card.__v, title, content, dueDate, urgency, qaStatus, epic, checklist, assignees, attachments, auditEvent: { user: user?.email || 'System', action: 'Updated card contents' } })} className="bg-blue-500 text-white px-10 py-4 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition shadow-xl">{t('actions.synchronize')}</button>
+        <div className="flex items-center gap-2 flex-wrap">
+            {bitbucketBranch?.name && (
+                <a href={bitbucketBranch.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#DEEBFF] hover:bg-[#B3D4FF] text-[#0052CC] px-4 py-2 rounded-full text-[10px] font-black tracking-widest border border-[#B3D4FF] transition" title={t('labels.open_bitbucket_branch') || 'Open in Bitbucket'}>
+                    <window.Icon name="git-branch" size={14} />
+                    <span className="font-mono normal-case truncate max-w-[200px]">{bitbucketBranch.name}</span>
+                    <window.Icon name="external-link" size={12} />
+                </a>
+            )}
+            {canUnbindBranch && (
+                <button onClick={confirmUnbindBranch} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition" title={t('actions.unbind_branch') || 'Unbind branch'}>
+                    <window.Icon name="link-2" size={14} />
+                </button>
+            )}
+            {canCreateBranch && (
+                <button onClick={openLinkBranchModal} className="bg-[#2684FF] hover:bg-[#0052CC] text-white px-6 py-4 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition shadow-xl flex items-center gap-2" title={t('labels.link_bitbucket_branch_title') || 'Link Bitbucket Branch'}>
+                    <window.Icon name="git-branch" size={14} /> {t('actions.link_branch') || 'Link Branch'}
+                </button>
+            )}
+            <button onClick={() => onSave({ __v: card.__v, title, content, dueDate, urgency, epic, checklist, assignees, attachments, auditEvent: { user: user?.email || 'System', action: 'Updated card contents' } })} className="bg-blue-500 text-white px-10 py-4 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition shadow-xl">{t('actions.synchronize')}</button>
+        </div>
     </div>
 </div>
             </div>
+            {isLinkBranchOpen && (
+                <window.GlobalModal isOpen={true} onClose={() => { if (!linkBusy) setIsLinkBranchOpen(false); }} title={t('labels.create_bitbucket_branch') || 'Create Bitbucket Branch'} footer={
+                    <div className="flex gap-2">
+                        <button onClick={() => setIsLinkBranchOpen(false)} disabled={linkBusy} className="bg-gray-100 text-gray-700 px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest disabled:opacity-50">{t('actions.cancel')}</button>
+                        <button onClick={createBranchOnBitbucket} disabled={!linkBranchName.trim() || !linkSourceBranch.trim() || linkBusy} className="bg-[#2684FF] hover:bg-[#0052CC] disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl flex items-center gap-2">
+                            <window.Icon name={linkBusy ? "loader" : "git-branch"} size={14}/> {linkBusy ? (t('actions.creating_branch') || 'Creating...') : (t('actions.create_branch') || 'Create Branch')}
+                        </button>
+                    </div>
+                }>
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-start gap-3">
+                            <p className="text-[10px] text-gray-400 font-bold leading-relaxed flex-1">{t('alerts.create_branch_help') || 'Noobieteam will create this branch on Bitbucket using your configured API token, then link it to this card.'}</p>
+                            {typeof onConfigureBitbucket === 'function' && (
+                                <button onClick={() => { setIsLinkBranchOpen(false); onConfigureBitbucket(() => { setLinkBranchName(getSuggestedBranchName()); setLinkSourceBranch(workspace?.bitbucketDefaultBranch || 'main'); setLinkError(''); setIsLinkBranchOpen(true); }); }} className="text-[9px] font-black text-[#0052CC] hover:underline flex items-center gap-1 flex-shrink-0 uppercase tracking-widest" title={t('labels.bitbucket_settings') || 'Bitbucket Settings'}>
+                                    <window.Icon name="settings" size={11}/> {t('actions.edit_settings') || 'Edit Settings'}
+                                </button>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.bitbucket_repo') || 'Repository'}</label>
+                            <div className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 text-xs font-bold font-mono text-gray-700 truncate">{workspace?.bitbucketRepo || '—'}</div>
+                        </div>
+                        <div>
+                            <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.source_branch') || 'Source Branch'}</label>
+                            <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-xs font-bold font-mono" value={linkSourceBranch} onChange={e => setLinkSourceBranch(e.target.value)} placeholder="main" />
+                        </div>
+                        <div>
+                            <label className="block text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">{t('labels.branch_name') || 'New Branch Name'}</label>
+                            <input className="w-full p-4 bg-gray-50 rounded-xl border border-gray-100 outline-none text-xs font-bold font-mono" value={linkBranchName} onChange={e => setLinkBranchName(e.target.value)} placeholder="feature/card-xxxxxx-title" autoFocus />
+                        </div>
+                        {linkError && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-xl text-[11px] font-bold">{linkError}</div>
+                        )}
+                    </div>
+                </window.GlobalModal>
+            )}
             {previewImage && (
                 <window.GlobalModal isOpen={true} onClose={() => setPreviewImage(null)} title={t('labels.attachment_preview')} footer={<button onClick={() => setPreviewImage(null)} className="bg-black text-white px-8 py-3 rounded-full text-[9px] font-black uppercase tracking-widest shadow-xl">{t('actions.close')}</button>}>
                     <div className="flex items-center justify-center min-h-[300px]">

@@ -62,7 +62,14 @@
     "add_secret": "Add Secret",
     "check_all": "Check All",
     "new_task": "New Task",
-    "submit_intel": "Submit Intel"
+    "submit_intel": "Submit Intel",
+    "create_branch": "Create Branch",
+    "unbind_branch": "Unbind branch",
+    "confirm_and_create_branch": "Confirm & Create Branch",
+    "creating_branch": "Creating...",
+    "confirm_unbind_branch": "Unlink Branch?",
+    "edit_settings": "Edit Settings",
+    "link_branch": "Link Branch"
   },
   "labels": {
     "email": "Email",
@@ -172,7 +179,24 @@
     "url": "URL (Optional)",
     "system": "System",
     "attachment_preview": "Attachment Preview",
-    "new_task": "New Task"
+    "new_task": "New Task",
+    "bitbucket_settings": "Bitbucket Settings",
+    "bitbucket_repo": "Repository (workspace/repo-slug)",
+    "bitbucket_branch_prefix": "Branch Prefix",
+    "create_bitbucket_branch": "Create Bitbucket Branch",
+    "open_bitbucket_branch": "Open in Bitbucket",
+    "bitbucket_default_branch": "Default Source Branch",
+    "source_branch": "Source Branch",
+    "bitbucket_app_username": "Bitbucket Username",
+    "bitbucket_app_password": "App Password",
+    "bitbucket_app_password_set": "set — leave blank to keep",
+    "create_app_password": "Create an app password →",
+    "bitbucket_auth_email": "Atlassian Email",
+    "bitbucket_api_token": "API Token",
+    "bitbucket_api_token_set": "set — leave blank to keep",
+    "create_api_token": "Create an Atlassian API token →",
+    "link_bitbucket_branch_title": "Link Bitbucket Branch",
+    "branch_name": "New Branch Name"
   },
   "alerts": {
     "welcome_back": "Welcome back, {name}! 🚀",
@@ -241,6 +265,16 @@
     "no_communication": "No communication logged.",
     "no_archived_cards": "No archived cards in this column.",
     "attachment_preview": "Attachment Preview",
-    "welcome_stats": "Welcome! You have {total} assigned tasks, {expiring} expiring soon, and {backlog} in backlog."
+    "welcome_stats": "Welcome! You have {total} assigned tasks, {expiring} expiring soon, and {backlog} in backlog.",
+    "bitbucket_help": "Connect this workspace to a Bitbucket Cloud repository so card creators can create and link a feature branch directly from a card.",
+    "bitbucket_saved": "Bitbucket settings saved.",
+    "branch_linked": "Branch linked: {name}",
+    "branch_unlinked": "Branch unlinked.",
+    "bitbucket_setup_first": "Configure your Bitbucket repository first, then click Create Branch again.",
+    "create_branch_help": "Noobieteam will create this branch on Bitbucket using your configured app password, then link it to this card.",
+    "branch_created": "Branch created: {name}",
+    "bitbucket_credentials_help": "API credentials are required to actually create branches on Bitbucket.",
+    "bitbucket_credentials_perms": "Scope the token to Bitbucket and grant repository read/write access.",
+    "confirm_unbind_branch_message": "Unlink {name} from this card? The branch on Bitbucket will not be deleted."
   }
 }

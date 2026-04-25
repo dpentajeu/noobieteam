@@ -8,7 +8,13 @@ const { User, Workspace, Task, Doc, Folder, Env, EmojiEvent } = require('../db')
 router.get('/workspaces', async (req, res) => {
   try {
     const workspaces = await Workspace.find();
-    res.json(workspaces);
+    const out = workspaces.map(w => {
+      const o = w.toObject();
+      o.bitbucketApiTokenSet = !!(o.bitbucketApiTokenEnc && o.bitbucketApiTokenEnc.value);
+      delete o.bitbucketApiTokenEnc;
+      return o;
+    });
+    res.json(out);
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -28,9 +34,87 @@ router.post('/workspaces', async (req, res) => {
 
 router.put('/workspaces/:id', async (req, res) => {
   try {
-    const ws = await Workspace.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(ws);
+    const updates = { ...req.body };
+    // Encrypt the Bitbucket app password if it's provided as plaintext
+    if (typeof updates.bitbucketApiTokenPlain === 'string') {
+      const plain = updates.bitbucketApiTokenPlain.trim();
+      delete updates.bitbucketApiTokenPlain;
+      if (plain.length === 0) {
+        updates.bitbucketApiTokenEnc = null; // explicit clear
+      } else {
+        const { encryptServerSecret } = require('../crypto');
+        updates.bitbucketApiTokenEnc = encryptServerSecret(plain);
+      }
+    }
+    // Never accept the encrypted blob directly from the client to avoid clobbering with garbage
+    if (!Object.prototype.hasOwnProperty.call(req.body, 'bitbucketApiTokenPlain')) {
+      delete updates.bitbucketApiTokenEnc;
+    }
+    const ws = await Workspace.findByIdAndUpdate(req.params.id, updates, { new: true });
+    // Strip encrypted blob before returning so it never reaches the client
+    const out = ws ? ws.toObject() : null;
+    if (out) {
+      out.bitbucketApiTokenSet = !!(out.bitbucketApiTokenEnc && out.bitbucketApiTokenEnc.value);
+      delete out.bitbucketApiTokenEnc;
+    }
+    res.json(out);
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// Create a branch on Bitbucket Cloud via API and return the branch info to bind to a card.
+router.post('/workspaces/:wsId/branches', async (req, res) => {
+  try {
+    const { branchName, sourceBranch } = req.body || {};
+    if (!branchName || !sourceBranch) {
+      return res.status(400).json({ error: 'branchName and sourceBranch are required' });
+    }
+    const ws = await Workspace.findById(req.params.wsId);
+    if (!ws) return res.status(404).json({ error: 'Workspace not found' });
+    if (!ws.bitbucketRepo) return res.status(400).json({ error: 'Bitbucket repository is not configured for this workspace' });
+    if (!ws.bitbucketAuthEmail || !ws.bitbucketApiTokenEnc?.value) {
+      return res.status(400).json({ error: 'Bitbucket API credentials are not configured for this workspace' });
+    }
+
+    let apiToken;
+    try {
+      const { decryptServerSecret } = require('../crypto');
+      apiToken = decryptServerSecret(ws.bitbucketApiTokenEnc);
+    } catch (e) {
+      console.error('[BITBUCKET] Failed to decrypt API token:', e.message);
+      return res.status(500).json({ error: 'Stored credentials could not be decrypted. Re-enter your Bitbucket API token.' });
+    }
+
+    const auth = Buffer.from(`${ws.bitbucketAuthEmail}:${apiToken}`).toString('base64');
+    const apiUrl = `https://api.bitbucket.org/2.0/repositories/${ws.bitbucketRepo}/refs/branches`;
+
+    let bbRes, bbBody;
+    try {
+      bbRes = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ name: branchName, target: { hash: sourceBranch } })
+      });
+      bbBody = await bbRes.json().catch(() => ({}));
+    } catch (e) {
+      console.error('[BITBUCKET] Network error:', e.message);
+      return res.status(502).json({ error: 'Failed to reach Bitbucket: ' + e.message });
+    }
+
+    if (!bbRes.ok) {
+      const msg = bbBody?.error?.message || bbBody?.message || `Bitbucket returned ${bbRes.status}`;
+      return res.status(bbRes.status).json({ error: msg, details: bbBody });
+    }
+
+    const branchUrl = bbBody?.links?.html?.href || `https://bitbucket.org/${ws.bitbucketRepo}/branch/${encodeURIComponent(branchName)}`;
+    res.json({ name: bbBody?.name || branchName, url: branchUrl, target: bbBody?.target?.hash });
+  } catch (e) {
+    console.error('[BITBUCKET] Branch create failed:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // For updating columns or members specifically, we can use PUT /workspaces/:id

@@ -58,7 +58,14 @@
     "remove": "Удалить",
     "new_workspace": "Новая область",
     "new_task": "Новая задача",
-    "submit_intel": "Отправить данные"
+    "submit_intel": "Отправить данные",
+    "create_branch": "Создать ветку",
+    "unbind_branch": "Отвязать ветку",
+    "confirm_and_create_branch": "Подтвердить и создать ветку",
+    "creating_branch": "Создание...",
+    "confirm_unbind_branch": "Отвязать ветку?",
+    "edit_settings": "Изменить настройки",
+    "link_branch": "Связать ветку"
   },
   "labels": {
     "email": "Email",
@@ -159,7 +166,24 @@
     "url": "URL (опционально)",
     "mission_chatter_title": "Чат миссии",
     "attachment_preview": "Предварительный просмотр вложения",
-    "new_task": "Новая задача"
+    "new_task": "Новая задача",
+    "bitbucket_settings": "Настройки Bitbucket",
+    "bitbucket_repo": "Репозиторий (workspace/repo-slug)",
+    "bitbucket_branch_prefix": "Префикс ветки",
+    "create_bitbucket_branch": "Создать ветку Bitbucket",
+    "open_bitbucket_branch": "Открыть в Bitbucket",
+    "bitbucket_default_branch": "Исходная ветка по умолчанию",
+    "source_branch": "Исходная ветка",
+    "bitbucket_app_username": "Имя пользователя Bitbucket",
+    "bitbucket_app_password": "App-пароль",
+    "bitbucket_app_password_set": "задан — оставьте пустым, чтобы сохранить",
+    "create_app_password": "Создать app-пароль →",
+    "bitbucket_auth_email": "Email Atlassian",
+    "bitbucket_api_token": "API-токен",
+    "bitbucket_api_token_set": "задан — оставьте пустым, чтобы сохранить",
+    "create_api_token": "Создать API-токен Atlassian →",
+    "link_bitbucket_branch_title": "Связать ветку Bitbucket",
+    "branch_name": "Имя новой ветки"
   },
   "alerts": {
     "welcome_back": "С возвращением, {name}! 🚀",
@@ -224,6 +248,16 @@
     "overwrite_conflict": "Конфликт: эта карточка была недавно изменена другим пользователем. Пожалуйста, обновите страницу, чтобы не перезаписать чужую работу.",
     "no_communication": "История общения отсутствует.",
     "no_archived_cards": "В этой колонке нет архивных карточек.",
-    "welcome_stats": "Добро пожаловать! У вас есть {total} назначенных задач, {expiring} истекающих в ближайшее время и {backlog} в бэклоге."
+    "welcome_stats": "Добро пожаловать! У вас есть {total} назначенных задач, {expiring} истекающих в ближайшее время и {backlog} в бэклоге.",
+    "bitbucket_help": "Подключите это рабочее пространство к репозиторию Bitbucket Cloud, чтобы создатели карточек могли создавать и привязывать ветку прямо из карточки.",
+    "bitbucket_saved": "Настройки Bitbucket сохранены.",
+    "branch_linked": "Ветка привязана: {name}",
+    "branch_unlinked": "Ветка отвязана.",
+    "bitbucket_setup_first": "Сначала настройте репозиторий Bitbucket, затем снова нажмите «Создать ветку».",
+    "create_branch_help": "Noobieteam создаст эту ветку в Bitbucket с использованием настроенного app-пароля и привяжет её к этой карточке.",
+    "branch_created": "Ветка создана: {name}",
+    "bitbucket_credentials_help": "Для фактического создания веток в Bitbucket требуются учётные данные API.",
+    "bitbucket_credentials_perms": "Ограничьте область токена Bitbucket и предоставьте доступ на чтение/запись репозитория.",
+    "confirm_unbind_branch_message": "Отвязать {name} от этой карточки? Ветка в Bitbucket не будет удалена."
   }
 }
