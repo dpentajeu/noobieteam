@@ -370,11 +370,11 @@ window.DocTab = ({ workspaceId, user }) => {
         });
     };
 
-    const bulkMove = async (folderId) => {
+    const bulkMove = async (targetFolderId) => {
         if (!selectedDocIds || selectedDocIds.size === 0) return;
         const arr = Array.from(selectedDocIds);
-        await fetch('/api/docs/bulk-move', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ docIds: arr, folderId }) });
-        setDocs(prev => prev.map(d => arr.includes(d.id || d._id) ? { ...d, folderId } : d));
+        await fetch('/api/docs/bulk-move', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ docIds: arr, folderId: targetFolderId }) });
+        setDocs(prev => prev.map(d => arr.includes(d.id || d._id) ? { ...d, folderId: targetFolderId } : d));
         setSelectedDocIds(new Set());
         setShowBulkMoveDropdown(false);
         showToast(`${arr.length} documents moved.`);
@@ -521,8 +521,7 @@ window.DocTab = ({ workspaceId, user }) => {
                     {docs.length === 0 && <p className="text-xs text-gray-400 text-center mt-10 font-medium italic">No documentation found. Create one to begin.</p>}
                 </div>
             </div>
-            </div>
-                    {isAnySelected && (
+            {isAnySelected && (
                         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur shadow-2xl border border-gray-200 rounded-full px-6 py-3 flex items-center gap-4 z-[2000] animate-fly-up-fade">
                             <span className="text-xs font-black text-gray-800">{selectedDocIds.size} selected</span>
                             <div className="h-4 w-px bg-gray-300"></div>
