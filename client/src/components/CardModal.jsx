@@ -23,6 +23,7 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, 
         return dStr.includes('T') ? dStr.split('T')[0] : dStr;
     });
     const [urgency, setUrgency] = React.useState(card.urgency || 'LOW');
+    const [qaStatus, setQaStatus] = React.useState(card.qaStatus || 'NONE');
     const [epic, setEpic] = React.useState(card.epic || '');
     const [checklist, setChecklist] = React.useState(card.checklist || []);
     const [assignees, setAssignees] = React.useState(card.assignees || []);
@@ -112,6 +113,7 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, 
     };
 
     const colors = { LOW: 'bg-blue-400', MED: 'bg-yellow-400', HIGH: 'bg-red-500' };
+    const qaColors = { NONE: 'bg-gray-400', PENDING: 'bg-amber-400', PASSED: 'bg-emerald-500', FAILED: 'bg-red-500' };
 
     const handleToggleCheck = React.useCallback((id) => {
         setChecklist(prev => {
@@ -170,7 +172,16 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, 
                             </div>
                         </div>
                     </div>
-                    
+
+                    <div>
+                        <label className="block text-sm font-black text-black uppercase tracking-widest mb-3">{t('labels.qa_status')}</label>
+                        <div className="flex gap-1.5 p-1 bg-gray-50 rounded-2xl border border-gray-100">
+                            {['NONE', 'PENDING', 'PASSED', 'FAILED'].map(st => (
+                                <button key={st} onClick={() => setQaStatus(st)} className={`flex-1 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition ${qaStatus === st ? qaColors[st] + ' text-white shadow-md' : 'text-gray-400 hover:bg-white'}`}>{t(`labels.qa_${st.toLowerCase()}`)}</button>
+                            ))}
+                        </div>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-black text-black uppercase tracking-widest mb-3">{t('labels.assignees')}</label>
                         <div className="flex flex-wrap gap-2 items-center">
@@ -325,7 +336,7 @@ window.CardModal = ({ card, user, members, allUsers, onClose, onSave, onDelete, 
         <button onClick={() => setShowAudit(!showAudit)} className="flex items-center gap-1.5 text-gray-400 hover:text-gray-600 transition text-[10px] font-black uppercase tracking-widest">
             <window.Icon name={showAudit ? "chevron-up" : "chevron-down"} size={14} /> {t('labels.audit_trail')}
         </button>
-        <button onClick={() => onSave({ __v: card.__v, title, content, dueDate, urgency, epic, checklist, assignees, attachments, auditEvent: { user: user?.email || 'System', action: 'Updated card contents' } })} className="bg-blue-500 text-white px-10 py-4 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition shadow-xl">{t('actions.synchronize')}</button>
+        <button onClick={() => onSave({ __v: card.__v, title, content, dueDate, urgency, qaStatus, epic, checklist, assignees, attachments, auditEvent: { user: user?.email || 'System', action: 'Updated card contents' } })} className="bg-blue-500 text-white px-10 py-4 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition shadow-xl">{t('actions.synchronize')}</button>
     </div>
 </div>
             </div>
