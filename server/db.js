@@ -86,6 +86,7 @@ const taskSchema = new mongoose.Schema({
   archived: { type: Boolean, default: false },
   content: String,
   urgency: { type: String, enum: ['LOW', 'MED', 'HIGH'], default: 'LOW' },
+  qaStatus: { type: String, enum: ['NONE', 'PENDING', 'PASSED', 'FAILED'], default: 'NONE' },
   dueDate: Date,
   expiredAlertAcknowledged: { type: Boolean, default: false },
   order: Number,

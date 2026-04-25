@@ -223,6 +223,9 @@ window.PublicDocsView = ({ wsPath, folderName }) => {
     const { t } = window.useTranslation ? window.useTranslation() : { t: k => k };
     const [docs, setDocs] = React.useState([]);
     const [folder, setFolder] = React.useState(null);
+    const [subfolders, setSubfolders] = React.useState([]);
+    const [expandedFolders, setExpandedFolders] = React.useState({});
+    const [selectedFolderId, setSelectedFolderId] = React.useState(null);
     const [workspace, setWorkspace] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState(null);
@@ -284,9 +287,10 @@ window.PublicDocsView = ({ wsPath, folderName }) => {
             .then(data => {
                 setWorkspace(data.workspace);
                 setFolder(data.folder);
+                setSubfolders(data.subfolders || []);
                 setDocs(data.docs);
-                if (data.docs && data.docs.length > 0) {
-                    setSelectedDocId(data.docs[0].id || data.docs[0]._id);
+                if (data.folder) {
+                    setSelectedFolderId(data.folder.id || data.folder._id);
                 }
             })
             .catch(err => setError(err.message))
@@ -296,7 +300,8 @@ window.PublicDocsView = ({ wsPath, folderName }) => {
     if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500 font-bold">Loading API Documentation...</div>;
     if (error) return <div className="min-h-screen flex items-center justify-center bg-red-50 text-red-500 font-black">{error}</div>;
 
-    const activeDoc = docs.find(d => (d.id === selectedDocId || d._id === selectedDocId));
+    const activeDoc = selectedDocId ? docs.find(d => (d.id === selectedDocId || d._id === selectedDocId)) : null;
+    const activeFolder = selectedFolderId && !selectedDocId ? (folder?.id === selectedFolderId || folder?._id === selectedFolderId ? folder : subfolders.find(f => (f.id === selectedFolderId || f._id === selectedFolderId))) : null;
 
     return (
         <div className="min-h-screen bg-white flex text-black font-sans">
@@ -317,19 +322,54 @@ window.PublicDocsView = ({ wsPath, folderName }) => {
                     )}
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-1">
-                    {docs.map(doc => {
-                        const docId = doc.id || doc._id;
-                        return (
-                            <div key={docId} onClick={() => { setSelectedDocId(docId); setShowMobileSidebar(false); }} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-white shadow-sm text-blue-600 font-bold border border-gray-200' : 'hover:bg-gray-100 text-gray-600 font-medium border border-transparent'}`}>
-                                {doc.type === 'API' ? (
-                                    <span className={`text-[9px] font-black w-10 text-center rounded px-1 py-0.5 ${doc.apiSpec?.method === 'POST' ? 'bg-emerald-100 text-emerald-700' : doc.apiSpec?.method === 'GET' ? 'bg-blue-100 text-blue-700' : doc.apiSpec?.method === 'PUT' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{doc.apiSpec?.method}</span>
-                                ) : (
-                                    <window.Icon name="file-text" size={16} className={selectedDocId === docId ? 'text-blue-500' : 'text-gray-400'} />
-                                )}
-                                <span className="text-sm truncate">{doc.title || 'Untitled'}</span>
+                    <div className="mb-2">
+                        <div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group transition ${selectedFolderId === (folder?.id || folder?._id) && !selectedDocId ? 'bg-blue-50' : 'hover:bg-gray-100'}`} onClick={() => { setSelectedFolderId(folder?.id || folder?._id); setSelectedDocId(null); setShowMobileSidebar(false); }}>
+                            <div className="flex items-center gap-2">
+                                <window.Icon name="folder" size={16} className="text-gray-400" />
+                                <span className="text-xs font-black text-gray-700">{folder?.name}</span>
                             </div>
-                        );
-                    })}
+                        </div>
+                        <div className="pl-6 mt-1 space-y-1">
+                            {subfolders.map(sub => (
+                                <div key={sub.id || sub._id} className="mb-1">
+                                    <div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group transition ${selectedFolderId === (sub.id || sub._id) && !selectedDocId ? 'bg-blue-50' : 'hover:bg-gray-100'}`} onClick={() => { setExpandedFolders(prev => ({ ...prev, [sub.id || sub._id]: !prev[sub.id || sub._id] })); setSelectedFolderId(sub.id || sub._id); setSelectedDocId(null); setShowMobileSidebar(false); }}>
+                                        <div className="flex items-center gap-2">
+                                            <window.Icon name={expandedFolders[sub.id || sub._id] ? "folder-open" : "folder"} size={14} className="text-gray-400" />
+                                            <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{sub.name}</span>
+                                        </div>
+                                    </div>
+                                    {expandedFolders[sub.id || sub._id] && (
+                                        <div className="pl-4 mt-1 space-y-1 border-l border-gray-100 ml-2">
+                                            {docs.filter(d => d.folderId === (sub.id || sub._id)).map(doc => {
+                                                const docId = doc.id || doc._id;
+                                                return (
+                                                    <div key={docId} onClick={() => { setSelectedDocId(docId); setShowMobileSidebar(false); }} className={`group flex items-center justify-between p-2 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-blue-50 text-blue-600 font-bold border border-gray-200' : 'hover:bg-gray-100 text-gray-600 font-medium border border-transparent'}`}>
+                                                        <div className="flex items-center gap-2 truncate">
+                                                            <window.Icon name={doc.type === 'API' ? "zap" : "file-text"} size={14} className={selectedDocId === docId ? 'text-blue-500' : 'text-gray-400'} />
+                                                            <span className="text-[11px] truncate">{doc.title || t('labels.untitled')}</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                            {docs.filter(d => d.folderId === (folder?.id || folder?._id)).map(doc => {
+                                const docId = doc.id || doc._id;
+                                return (
+                                    <div key={docId} onClick={() => { setSelectedDocId(docId); setShowMobileSidebar(false); }} className={`flex items-center gap-3 p-2 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-white shadow-sm text-blue-600 font-bold border border-gray-200' : 'hover:bg-gray-100 text-gray-600 font-medium border border-transparent'}`}>
+                                        {doc.type === 'API' ? (
+                                            <span className={`text-[9px] font-black w-10 text-center rounded px-1 py-0.5 ${doc.apiSpec?.method === 'POST' ? 'bg-emerald-100 text-emerald-700' : doc.apiSpec?.method === 'GET' ? 'bg-blue-100 text-blue-700' : doc.apiSpec?.method === 'PUT' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{doc.apiSpec?.method}</span>
+                                        ) : (
+                                            <window.Icon name="file-text" size={16} className={selectedDocId === docId ? 'text-blue-500' : 'text-gray-400'} />
+                                        )}
+                                        <span className="text-sm truncate">{doc.title || t('labels.untitled')}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -339,7 +379,7 @@ window.PublicDocsView = ({ wsPath, folderName }) => {
                     <button onClick={() => setShowMobileSidebar(true)} className="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
                         <window.Icon name="menu" size={20} />
                     </button>
-                    <h2 className="text-lg font-black tracking-tight">{activeDoc ? activeDoc.title : 'Select a document'}</h2>
+                    <h2 className="text-lg font-black tracking-tight">{activeDoc ? activeDoc.title : activeFolder ? activeFolder.name : 'Select a document'}</h2>
                 </header>
                 <div className="flex-1 overflow-y-auto p-4 md:p-10 bg-white">
                     {activeDoc ? (
@@ -385,7 +425,7 @@ window.PublicDocsView = ({ wsPath, folderName }) => {
                                         <pre className="p-4 bg-gray-900 text-gray-100 rounded-2xl text-xs overflow-x-auto font-mono"><code>{activeDoc.apiSpec.body}</code></pre>
                                     </div>
                                 )}
-                            
+                                </div>
                                 <div className="mt-12 pt-8 border-t border-gray-100">
                                     <div className="flex justify-between items-center mb-6">
                                         <h3 className="text-sm font-black uppercase tracking-widest text-black">{t('labels.live_api_test') || 'Live API Test'}</h3>
@@ -406,7 +446,6 @@ window.PublicDocsView = ({ wsPath, folderName }) => {
                                         </div>
                                     )}
                                 </div>
-                            </div>
                             </div>
                         ) : (
                             <div className="max-w-4xl mx-auto">

@@ -415,6 +415,28 @@ router.post('/workspaces/:wsId/docs', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+router.delete('/docs/bulk', async (req, res) => {
+  try {
+    const { docIds } = req.body;
+    if (!docIds || !Array.isArray(docIds)) return res.status(400).json({ error: 'docIds array required' });
+    await Doc.deleteMany({ _id: { $in: docIds } });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.put('/docs/bulk-move', async (req, res) => {
+  try {
+    const { docIds, folderId } = req.body;
+    if (!docIds || !Array.isArray(docIds)) return res.status(400).json({ error: 'docIds array required' });
+    await Doc.updateMany({ _id: { $in: docIds } }, folderId ? { $set: { folderId } } : { $unset: { folderId: 1 } });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 router.put('/docs/:id', async (req, res) => {
   try {
     const doc = await Doc.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -423,6 +445,7 @@ router.put('/docs/:id', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
 router.delete('/docs/:id', async (req, res) => {
   try {
     await Doc.findByIdAndDelete(req.params.id);
@@ -534,9 +557,19 @@ router.get('/public/docs/:wsId/:folderSlug', async (req, res) => {
     const folder = await Folder.findOne({ $or: query, workspaceId: workspace._id.toString() });
     if (!folder) return res.status(404).json({ error: 'Folder not found' });
     
-    const docs = await Doc.find({ workspaceId: workspace._id.toString(), folderId: folder._id }).sort({ order: 1, createdAt: 1 });
+    // Support 1-level deep subfolders
+    const subfolders = await Folder.find({ workspaceId: workspace._id.toString(), parentId: folder._id.toString() });
+    const subfolderIds = subfolders.map(f => f._id.toString());
     
-    res.json({ workspace: { id: workspace._id, name: workspace.name }, folder: { id: folder._id, name: folder.name, slug: folder.slug }, docs });
+    // Fetch docs in root folder AND subfolders
+    const docs = await Doc.find({ workspaceId: workspace._id.toString(), folderId: { $in: [folder._id.toString(), ...subfolderIds] } }).sort({ order: 1, createdAt: 1 });
+    
+    res.json({ 
+        workspace: { id: workspace._id, name: workspace.name }, 
+        folder: { id: folder._id, name: folder.name, slug: folder.slug, description: folder.description }, 
+        subfolders: subfolders.map(f => ({ id: f._id, name: f.name, parentId: f.parentId, description: f.description })),
+        docs 
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

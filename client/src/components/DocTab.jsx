@@ -164,6 +164,8 @@ window.DocTab = ({ workspaceId, user }) => {
     const [docs, setDocs] = React.useState([]);
     const [folders, setFolders] = React.useState([]);
     const [selectedDocId, setSelectedDocId] = React.useState(null);
+    const [selectedDocIds, setSelectedDocIds] = React.useState(new Set());
+    const [showBulkMoveDropdown, setShowBulkMoveDropdown] = React.useState(false);
     const [selectedFolderId, setSelectedFolderId] = React.useState(null);
     const [expandedFolders, setExpandedFolders] = React.useState({});
     const [loading, setLoading] = React.useState(true);
@@ -348,6 +350,36 @@ window.DocTab = ({ workspaceId, user }) => {
         await fetch(`/api/docs/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(upd) });
     };
 
+    const toggleDocSelection = (id, e) => {
+        e.stopPropagation();
+        const next = new Set(selectedDocIds);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        setSelectedDocIds(next);
+    };
+
+    const bulkDelete = () => {
+        if (!selectedDocIds || selectedDocIds.size === 0) return;
+        showConfirm("Bulk Erase", `Delete ${selectedDocIds.size} selected documents? This cannot be undone.`, async () => {
+            const arr = Array.from(selectedDocIds);
+            await fetch('/api/docs/bulk', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ docIds: arr }) });
+            setDocs(prev => prev.filter(d => !arr.includes(d.id || d._id)));
+            if (selectedDocId && arr.includes(selectedDocId)) setSelectedDocId(null);
+            setSelectedDocIds(new Set());
+            showToast(`${arr.length} documents erased.`);
+        });
+    };
+
+    const bulkMove = async (targetFolderId) => {
+        if (!selectedDocIds || selectedDocIds.size === 0) return;
+        const arr = Array.from(selectedDocIds);
+        await fetch('/api/docs/bulk-move', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ docIds: arr, folderId: targetFolderId }) });
+        setDocs(prev => prev.map(d => arr.includes(d.id || d._id) ? { ...d, folderId: targetFolderId } : d));
+        setSelectedDocIds(new Set());
+        setShowBulkMoveDropdown(false);
+        showToast(`${arr.length} documents moved.`);
+    };
+
     const deleteDoc = async (id) => {
         if (!id) return;
         showConfirm("Destroy Document", "PERMANENTLY erase this document?", async () => {
@@ -387,6 +419,7 @@ window.DocTab = ({ workspaceId, user }) => {
                         const folderId = folder.id || folder._id;
                         const isExpanded = expandedFolders[folderId];
                         const folderDocs = docs.filter(d => d.folderId === folderId);
+                        const isAnySelected = selectedDocIds && selectedDocIds.size > 0;
                         return (
                             <div key={folderId} className="mb-2">
                                 <div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group transition ${selectedFolderId === folderId && !selectedDocId ? 'bg-blue-50' : 'hover:bg-gray-50'}`} onClick={() => { toggleFolder(folderId); setSelectedFolderId(folderId); setSelectedDocId(null); setShowMobileSidebar(false); }}>
@@ -416,9 +449,13 @@ window.DocTab = ({ workspaceId, user }) => {
                                                     <div className="pl-4 mt-1 space-y-1 border-l border-gray-100 ml-2">
                                                         {docs.filter(d => d.folderId === (sub.id || sub._id)).map(doc => {
                                                             const docId = doc.id || doc._id;
-                                                            return (
-                                                                <div key={docId} onClick={() => { setSelectedDocId(docId); setShowMobileSidebar(false); }} className={`group flex items-center justify-between p-2 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50 text-gray-600'}`}>
+                                                            const isSelected = selectedDocIds.has(docId);
+                                                return (
+                                                <div key={docId} onClick={(e) => { if(isAnySelected) { toggleDocSelection(docId, e); } else { setSelectedDocId(docId); setShowMobileSidebar(false); } }} className={`group flex items-center justify-between p-2 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-blue-50 text-blue-600' : isSelected ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-gray-50 text-gray-600'}`}>
                                                                     <div className="flex items-center gap-2 truncate">
+                                                        <div onClick={(e) => toggleDocSelection(docId, e)} className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-indigo-500 border-indigo-500 text-white opacity-100' : 'border-gray-300 opacity-0 group-hover:opacity-100 hover:border-indigo-400'}`}>
+                                                            {isSelected && <window.Icon name="check" size={10} />}
+                                                        </div>
                                                                         <window.Icon name={doc.type === 'API' ? "zap" : "file-text"} size={14} className={selectedDocId === docId ? 'text-blue-500' : 'text-gray-400'} />
                                                                         <span className="text-[11px] font-bold truncate">{doc.title || t('labels.untitled')}</span>
                                                                     </div>
@@ -435,9 +472,13 @@ window.DocTab = ({ workspaceId, user }) => {
                                         ))}
                                         {folderDocs.map(doc => {
                                             const docId = doc.id || doc._id;
-                                                                                        return (
-                                                <div key={docId} onClick={() => { setSelectedDocId(docId); setShowMobileSidebar(false); }} className={`group flex items-center justify-between p-2 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-50 text-gray-600'}`}>
+                                                                                        const isSelected = selectedDocIds.has(docId);
+                                                return (
+                                                <div key={docId} onClick={(e) => { if(isAnySelected) { toggleDocSelection(docId, e); } else { setSelectedDocId(docId); setShowMobileSidebar(false); } }} className={`group flex items-center justify-between p-2 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-blue-50 text-blue-600' : isSelected ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-gray-50 text-gray-600'}`}>
                                                     <div className="flex items-center gap-2 truncate">
+                                                        <div onClick={(e) => toggleDocSelection(docId, e)} className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-indigo-500 border-indigo-500 text-white opacity-100' : 'border-gray-300 opacity-0 group-hover:opacity-100 hover:border-indigo-400'}`}>
+                                                            {isSelected && <window.Icon name="check" size={10} />}
+                                                        </div>
                                                         <window.Icon name={doc.type === 'API' ? "zap" : "file-text"} size={14} className={selectedDocId === docId ? 'text-blue-500' : 'text-gray-400'} />
                                                         <span className="text-xs font-bold truncate">{doc.title || t('labels.untitled')}</span>
                                                     </div>
@@ -459,9 +500,13 @@ window.DocTab = ({ workspaceId, user }) => {
                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 px-2">{t('labels.root_documents')}</p>
                     {docs.filter(d => !d.folderId).map(doc => {
                         const docId = doc.id || doc._id;
+                        const isSelected = selectedDocIds.has(docId);
                         return (
-                        <div key={docId} onClick={() => { setSelectedDocId(docId); setShowMobileSidebar(false); }} className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-blue-50 border border-blue-100 text-blue-600 shadow-sm' : 'hover:bg-gray-50 border border-transparent'}`}>
+                        <div key={docId} onClick={(e) => { if(isAnySelected) { toggleDocSelection(docId, e); } else { setSelectedDocId(docId); setShowMobileSidebar(false); } }} className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition ${selectedDocId === docId ? 'bg-blue-50 border border-blue-100 text-blue-600 shadow-sm' : isSelected ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-gray-50 border border-transparent'}`}>
                             <div className="flex items-center gap-3">
+                                <div onClick={(e) => toggleDocSelection(docId, e)} className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition ${isSelected ? 'bg-indigo-500 border-indigo-500 text-white opacity-100' : 'border-gray-300 opacity-0 group-hover:opacity-100 hover:border-indigo-400'}`}>
+                                    {isSelected && <window.Icon name="check" size={10} />}
+                                </div>
                                 {doc.type === 'API' ? (
                                     <span className={`text-[9px] font-black w-10 text-center rounded px-1 py-0.5 ${doc.apiSpec?.method === 'POST' ? 'bg-emerald-100 text-emerald-700' : doc.apiSpec?.method === 'GET' ? 'bg-blue-100 text-blue-700' : doc.apiSpec?.method === 'PUT' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{doc.apiSpec?.method}</span>
                                 ) : (
@@ -476,8 +521,37 @@ window.DocTab = ({ workspaceId, user }) => {
                     {docs.length === 0 && <p className="text-xs text-gray-400 text-center mt-10 font-medium italic">No documentation found. Create one to begin.</p>}
                 </div>
             </div>
-            </div>
-
+            {isAnySelected && (
+                        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur shadow-2xl border border-gray-200 rounded-full px-6 py-3 flex items-center gap-4 z-[2000] animate-fly-up-fade">
+                            <span className="text-xs font-black text-gray-800">{selectedDocIds.size} selected</span>
+                            <div className="h-4 w-px bg-gray-300"></div>
+                            
+                            <div className="relative">
+                                <button onClick={() => setShowBulkMoveDropdown(!showBulkMoveDropdown)} className="flex items-center gap-2 text-blue-500 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition text-[10px] font-black uppercase tracking-widest">
+                                    <window.Icon name="folder-input" size={14} /> Move
+                                </button>
+                                {showBulkMoveDropdown && (
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-white border border-gray-100 shadow-xl rounded-2xl overflow-hidden py-1">
+                                        <button onClick={() => bulkMove(null)} className="w-full text-left px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-50"><window.Icon name="log-out" size={14}/> Root</button>
+                                        {folders.map(f => (
+                                            <button key={f.id || f._id} onClick={() => bulkMove(f.id || f._id)} className="w-full text-left px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2">
+                                                <window.Icon name="folder" size={14}/> {f.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <button onClick={bulkDelete} className="flex items-center gap-2 text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition text-[10px] font-black uppercase tracking-widest">
+                                <window.Icon name="trash-2" size={14} /> Delete
+                            </button>
+                            <div className="h-4 w-px bg-gray-300"></div>
+                            <button onClick={() => { setSelectedDocIds(new Set()); setShowBulkMoveDropdown(false); }} className="text-gray-400 hover:bg-gray-100 p-1.5 rounded-full transition">
+                                <window.Icon name="x" size={16} />
+                            </button>
+                        </div>
+                    )}
+                </div>
             {/* Content Area */}
             <div className="flex-1 flex flex-col bg-white relative z-0">
                 {activeDoc ? (

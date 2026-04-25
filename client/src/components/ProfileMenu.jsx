@@ -15,7 +15,7 @@ window.ProfileMenu = ({ user, onLogout, onThemeChange, currentTheme, onUpdateUse
         { id: 'zh-TW', name: '繁體中文' }
     ];
     const uMail = user?.email || 'User';
-    const uLabel = uMail.charAt(0).toUpperCase();
+    const uLabel = window.getInitials(uMail);
     const avatarInputRef = React.useRef(null);
 
     const isDarkHeader = ['dark', 'darkblue', 'green', 'ocean'].includes(currentTheme);

@@ -37,6 +37,20 @@ window.safeParse = (key, fallback) => {
 
 window.generateId = (prefix = '') => prefix + '-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
 
+// Derives 2-letter initials from an email or display string.
+// Splits on common separators (./_/-/space) and uses first letter of each of the first 2 segments;
+// otherwise uses the first 2 characters of the local part (before '@').
+// Examples: "jinlun@x" -> "JI", "junwah@x" -> "JU", "jin.lun@x" -> "JL", "" -> "?".
+window.getInitials = (email) => {
+    if (!email || typeof email !== 'string') return '?';
+    const local = email.split('@')[0] || '';
+    if (!local) return '?';
+    const parts = local.split(/[._\-\s]+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    if (local.length >= 2) return local.slice(0, 2).toUpperCase();
+    return local[0].toUpperCase();
+};
+
 // Robust In-House Hex-based Encryption (Unicode safe)
 window.stringToHex = (str) => {
     let res = '';
