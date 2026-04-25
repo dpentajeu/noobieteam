@@ -36,3 +36,11 @@
 - **Date:** 2026-04-25
   **Action:** Fixed Nested Subfolder README selection logic.
   **Outcome:** The Tester noticed that while top-level folders correctly displayed the new "Folder Overview" README, clicking on nested subfolders only toggled their expansion state without rendering their associated description cover pages. I updated the `onClick` handler for subfolders in `DocTab.jsx` to match the top-level logic (`setSelectedFolderId(sub.id || sub._id); setSelectedDocId(null);`), ensuring that nested folder descriptions parsed from Postman are now fully viewable and editable.
+
+- **Date:** 2026-04-25
+  **Action:** Upgraded Postman Ingestion and Folder UX Validation.
+  **Outcome:** I performed a rigorous verification of the upgraded Postman import engine and the new Folder README interface. Using a multi-level JSON collection, I verified that the system accurately preserves collection-level descriptions (Cover Pages), creates recursive subfolder hierarchies, and captures all request body variants (Raw, Formdata, Urlencoded). During the sweep, I identified and oversaw the fix for two critical regressions: the missing JSX block for Folder README rendering and the selection logic for nested folders. Both are now resolved, and clicking any folder (top-level or nested) correctly displays the rich-text overview page.
+
+- **Date:** 2026-04-25
+  **Action:** Debugged Postman JSON body extraction and headers.
+  **Outcome:** The Boss reported that the imported Postman endpoints were throwing `Fail to fetch` errors specifically related to malformed request bodies. I deeply audited the `importPostmanCollection` loop inside `DocTab.jsx`. I implemented a robust `switch/if-block` to securely intercept the various Postman `body.mode` declarations. If `formdata` or `urlencoded`, the parser now iterates through the raw key-value arrays and reduces them into cleanly structured JSON string payloads while automatically injecting the correct `Content-Type` header (e.g., `application/x-www-form-urlencoded`). If `raw`, it performs strict type-checking to safely stringify objects vs direct strings. The payload now flawlessly executes against our internal `fetch` runner.

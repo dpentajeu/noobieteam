@@ -219,9 +219,23 @@ window.DocTab = ({ workspaceId, user }) => {
                         const headers = (req.header || []).map(h => ({ key: h.key, value: h.value }));
                         const queryParams = (req.url?.query || []).map(q => ({ key: q.key, value: q.value }));
                         let body = '';
-                        if (req.body?.mode === 'raw') body = req.body.raw;
-                        else if (req.body?.mode === 'formdata') body = JSON.stringify(req.body.formdata, null, 2);
-                        else if (req.body?.mode === 'urlencoded') body = JSON.stringify(req.body.urlencoded, null, 2);
+                        if (req.body?.mode === 'raw') {
+                            if (typeof req.body.raw === 'string') {
+                                body = req.body.raw;
+                            } else {
+                                body = JSON.stringify(req.body.raw, null, 2);
+                            }
+                        }
+                        else if (req.body?.mode === 'formdata') {
+                            const formDataArr = Array.isArray(req.body.formdata) ? req.body.formdata : [];
+                            body = JSON.stringify(formDataArr.reduce((acc, curr) => { if(curr.key) acc[curr.key] = curr.value || ''; return acc; }, {}), null, 2);
+                            headers.push({ key: 'Content-Type', value: 'multipart/form-data' });
+                        }
+                        else if (req.body?.mode === 'urlencoded') {
+                            const urlEncodedArr = Array.isArray(req.body.urlencoded) ? req.body.urlencoded : [];
+                            body = JSON.stringify(urlEncodedArr.reduce((acc, curr) => { if(curr.key) acc[curr.key] = curr.value || ''; return acc; }, {}), null, 2);
+                            headers.push({ key: 'Content-Type', value: 'application/x-www-form-urlencoded' });
+                        }
                         
                         const newDoc = { 
                             title: item.name || 'API Endpoint', 
