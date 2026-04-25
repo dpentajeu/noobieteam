@@ -28,3 +28,7 @@
 - **Date:** 2026-04-25
   **Action:** Hotfix Postman Import body logic and Subfolder/Overview UX.
   **Outcome:** The Boss reported that the previous Postman importer missed raw body contents and requested a Folder "Cover Page" and subfolder hierarchy support. Upgraded the `FileReader` recursion in `DocTab.jsx` to dynamically scrape `request.body.raw`, `request.body.formdata`, and `request.body.urlencoded` seamlessly, converting them into standard payload strings. Integrated the new CTO schema (`parentId` and `description`) into the frontend map, ensuring the UI correctly groups docs into native sub-folders. Finally, transformed the main content area of `DocTab` to conditionally render a `ModernDocEditor` when a user clicks a Folder instead of an Endpoint, natively fulfilling the requested "README Cover Page" workflow.
+
+- **Date:** 2026-04-25
+  **Action:** Hotfix Folder README active rendering regression.
+  **Outcome:** The Tester discovered that the previous update initialized `activeFolder` but failed to correctly inject the React JSX block due to a mismatch in a targeted `replace` string. I patched `DocTab.jsx` to correctly inject the `activeFolder` ternary. Now, clicking a folder bypasses the "No Document Selected" fallback state and seamlessly renders the `window.ModernDocEditor` directly bound to the Mongoose folder's `description` field.

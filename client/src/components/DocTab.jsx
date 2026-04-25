@@ -564,6 +564,34 @@ window.DocTab = ({ workspaceId, user }) => {
                             )}
                         </div>
                     </div>
+                ) : activeFolder ? (
+                    <div className="flex-1 flex flex-col h-full">
+                        <div className="px-10 py-6 border-b border-gray-50 flex items-center justify-between bg-white z-10 shadow-sm">
+                            <input 
+                                className="text-3xl font-black bg-transparent outline-none w-2/3 tracking-tighter"
+                                value={activeFolder.name}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setFolders(prev => prev.map(f => (f.id === activeFolder.id || f._id === activeFolder._id) ? { ...f, name: val } : f));
+                                    fetch(`/api/folders/${activeFolder.id || activeFolder._id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name: val }) });
+                                }}
+                            />
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Folder Overview</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 md:p-10 bg-[#FAFAFA]">
+                            <div className="max-w-4xl mx-auto flex flex-col h-full">
+                                <div className="flex justify-end mb-4">
+                                    <button onClick={() => setIsDocEditing(!isDocEditing)} className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition ${isDocEditing ? 'bg-red-50 text-red-500 border border-red-100 hover:bg-red-100' : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'}`}>
+                                        {isDocEditing ? t('actions.done_editing') || 'Done Editing' : t('actions.edit_document') || 'Edit Readme'}
+                                    </button>
+                                </div>
+                                <window.ModernDocEditor key={activeFolder.id || activeFolder._id} initialContent={activeFolder.description || ''} editable={isDocEditing} onChange={(jsonStr) => {
+                                    setFolders(prev => prev.map(f => (f.id === activeFolder.id || f._id === activeFolder._id) ? { ...f, description: jsonStr } : f));
+                                    fetch(`/api/folders/${activeFolder.id || activeFolder._id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ description: jsonStr }) });
+                                }} />
+                            </div>
+                        </div>
+                    </div>
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-gray-400 h-full bg-[#FAFAFA]">
                         <window.Icon name="book-open" size={64} className="mb-6 opacity-20" />
