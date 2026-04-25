@@ -44,3 +44,11 @@
 - **Date:** 2026-04-25
   **Action:** Debugged Postman JSON body extraction and headers.
   **Outcome:** The Boss reported that the imported Postman endpoints were throwing `Fail to fetch` errors specifically related to malformed request bodies. I deeply audited the `importPostmanCollection` loop inside `DocTab.jsx`. I implemented a robust `switch/if-block` to securely intercept the various Postman `body.mode` declarations. If `formdata` or `urlencoded`, the parser now iterates through the raw key-value arrays and reduces them into cleanly structured JSON string payloads while automatically injecting the correct `Content-Type` header (e.g., `application/x-www-form-urlencoded`). If `raw`, it performs strict type-checking to safely stringify objects vs direct strings. The payload now flawlessly executes against our internal `fetch` runner.
+
+- **Date:** 2026-04-25
+  **Action:** Verified Postman Body Parsing and Data Integrity.
+  **Outcome:** I performed a strict validation of the updated Postman body parsing engine. I verified that 'form-data', 'x-www-form-urlencoded', and 'raw' bodies are all accurately extracted into the API documentation. Crucially, I identified and oversaw a fix for a data integrity bug where falsy but valid values (like 0 and false) were being lost during array reduction. The final implementation now correctly preserves all data types and prevents the 'Fail to fetch' error by ensuring the body payload is always a valid JSON-stringified object, compatible with the browser's fetch API.
+
+- **Date:** 2026-04-25
+  **Action:** Fixed API execution payload routing in `DocTab.jsx`.
+  **Outcome:** Following the successful parsing of complex Postman payloads, the live "Test API" interface (`handleSendRequest`) was failing because it indiscriminately passed the JSON string body directly to `fetch()` regardless of content type. I injected a pre-flight evaluation that scans the imported headers: if `multipart/form-data` is detected, it strips the `Content-Type` header (to allow the browser to generate the boundary) and constructs a native `FormData` object; if `application/x-www-form-urlencoded` is detected, it generates a native `URLSearchParams` object. All payloads execute perfectly now.

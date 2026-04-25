@@ -78,11 +78,24 @@ window.DocTab = ({ workspaceId, user }) => {
             const start = Date.now();
             let url = doc.apiSpec?.url || '';
             
-            const fetchHeaders = { 'Content-Type': 'application/json' };
+            const fetchHeaders = {};
+            let isFormData = false;
+            let isUrlEncoded = false;
+            
             if (doc.apiSpec?.headers && Array.isArray(doc.apiSpec.headers)) {
                 doc.apiSpec.headers.forEach(h => {
-                    if (h.key && h.value) fetchHeaders[h.key] = h.value;
+                    if (h.key && h.value) {
+                        fetchHeaders[h.key] = h.value;
+                        if (h.key.toLowerCase() === 'content-type') {
+                            if (h.value.includes('multipart/form-data')) isFormData = true;
+                            if (h.value.includes('application/x-www-form-urlencoded')) isUrlEncoded = true;
+                        }
+                    }
                 });
+            }
+
+            if (!fetchHeaders['Content-Type'] && !isFormData) {
+                fetchHeaders['Content-Type'] = 'application/json';
             }
 
             const options = {
@@ -91,7 +104,30 @@ window.DocTab = ({ workspaceId, user }) => {
             };
 
             if (options.method !== 'GET' && options.method !== 'HEAD' && doc.apiSpec?.body) {
-                options.body = doc.apiSpec.body; 
+                if (isFormData) {
+                    delete options.headers['Content-Type']; // Let browser set boundary automatically
+                    const formData = new window.FormData();
+                    try {
+                        const parsedBody = JSON.parse(doc.apiSpec.body);
+                        Object.keys(parsedBody).forEach(key => formData.append(key, parsedBody[key]));
+                        options.body = formData;
+                    } catch(e) {
+                        console.error('Failed to parse formdata body:', e);
+                        options.body = doc.apiSpec.body;
+                    }
+                } else if (isUrlEncoded) {
+                    try {
+                        const parsedBody = JSON.parse(doc.apiSpec.body);
+                        const params = new window.URLSearchParams();
+                        Object.keys(parsedBody).forEach(key => params.append(key, parsedBody[key]));
+                        options.body = params;
+                    } catch(e) {
+                        console.error('Failed to parse urlencoded body:', e);
+                        options.body = doc.apiSpec.body;
+                    }
+                } else {
+                    options.body = typeof doc.apiSpec.body === 'object' ? JSON.stringify(doc.apiSpec.body) : doc.apiSpec.body;
+                }
             }
 
             const res = await fetch(url, options);
