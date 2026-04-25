@@ -1,3 +1,96 @@
+/** sessionStorage: per-tab, per-workspace notification list (not shared across browser tabs). */
+function ntWorkspaceNotificationsKey(workspaceId) {
+    return `nt_ws_notifications_${workspaceId || 'unknown'}`;
+}
+
+function readWorkspaceNotificationsSession(workspaceId) {
+    try {
+        const raw = sessionStorage.getItem(ntWorkspaceNotificationsKey(workspaceId));
+        if (!raw) return [];
+        const data = JSON.parse(raw);
+        return Array.isArray(data) ? data : [];
+    } catch (_) {
+        return [];
+    }
+}
+
+/** Saves one entry and returns the updated list (newest first, max 50). */
+function pushWorkspaceNotificationSession(workspaceId, message) {
+    const prev = readWorkspaceNotificationsSession(workspaceId);
+    const entry = {
+        id: window.generateId ? window.generateId('ntf') : `ntf-${Date.now()}`,
+        message,
+        createdAt: Date.now(),
+    };
+    const next = [entry, ...prev].slice(0, 50);
+    try {
+        sessionStorage.setItem(ntWorkspaceNotificationsKey(workspaceId), JSON.stringify(next));
+    } catch (_) {}
+    return next;
+}
+
+function removeWorkspaceNotificationSession(workspaceId, notificationId) {
+    const prev = readWorkspaceNotificationsSession(workspaceId);
+    const next = prev.filter((n) => n && n.id !== notificationId);
+    try {
+        sessionStorage.setItem(ntWorkspaceNotificationsKey(workspaceId), JSON.stringify(next));
+    } catch (_) {}
+    return next;
+}
+
+function clearWorkspaceNotificationsSession(workspaceId) {
+    try {
+        sessionStorage.removeItem(ntWorkspaceNotificationsKey(workspaceId));
+    } catch (_) {}
+    return [];
+}
+
+/**
+ * One string id for this workspace (API + sessionStorage). Prefers `id`, then `_id`, handling ObjectId-like objects.
+ */
+function getWorkspaceCanonicalId(ws) {
+    if (!ws) return '';
+    const primary = ws.id;
+    const secondary = ws._id;
+    const pick =
+        primary != null && String(primary).trim() !== ''
+            ? primary
+            : secondary != null && String(secondary).trim() !== ''
+              ? secondary
+              : '';
+    if (pick === '') return '';
+    if (typeof pick === 'object' && pick.toString) return String(pick);
+    return String(pick);
+}
+
+/**
+ * Loads notifications for this workspace from sessionStorage using the canonical id.
+ * If nothing is stored under that key, tries the other id field once and migrates to the canonical key.
+ */
+function readWorkspaceNotificationsForWorkspace(ws) {
+    const canon = getWorkspaceCanonicalId(ws);
+    if (!canon) return [];
+    let list = readWorkspaceNotificationsSession(canon);
+    if (list.length > 0) return list;
+    const alts = [];
+    if (ws.id != null && String(ws.id) !== canon) alts.push(String(ws.id));
+    if (ws._id != null) {
+        const s = typeof ws._id === 'object' && ws._id.toString ? String(ws._id) : String(ws._id);
+        if (s && s !== canon) alts.push(s);
+    }
+    for (const alt of alts) {
+        const altList = readWorkspaceNotificationsSession(alt);
+        if (altList.length > 0) {
+            try {
+                sessionStorage.setItem(ntWorkspaceNotificationsKey(canon), JSON.stringify(altList));
+                sessionStorage.removeItem(ntWorkspaceNotificationsKey(alt));
+            } catch (_) {}
+            return altList;
+        }
+    }
+    return [];
+}
+
 window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, theme, onUpdateUser, isJukeboxActive }) => {
     const { showConfirm, showPrompt, showAlert } = window.useModals();
     const { showToast } = window.useToasts();
@@ -11,12 +104,25 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
     const [loading, setLoading] = React.useState(true);
     const [expiredCards, setExpiredCards] = React.useState([]);
     const [showExpiredModal, setShowExpiredModal] = React.useState(false);
-    const [hasShownWelcome, setHasShownWelcome] = React.useState(false);
     const [selectedMoveCol, setSelectedMoveCol] = React.useState('');
+    const wsNotificationStorageId = getWorkspaceCanonicalId(workspace);
+    const [sessionNotifications, setSessionNotifications] = React.useState(() => readWorkspaceNotificationsForWorkspace(workspace));
     const { t } = window.useTranslation ? window.useTranslation() : { t: k => k };
 
     React.useEffect(() => {
+        setSessionNotifications(readWorkspaceNotificationsForWorkspace(workspace));
+    }, [wsNotificationStorageId]);
+
+    /** Avoid duplicate welcome toast per workspace session; safe when switching workspaces (no stale state). */
+    const welcomeNotifiedWorkspaceRef = React.useRef(null);
+    /** Ignores stale task-fetch results after the user switches to another workspace. */
+    const workspaceFetchScopeRef = React.useRef('');
+
+    React.useEffect(() => {
+        const fetchScopeId = getWorkspaceCanonicalId(workspace);
+        workspaceFetchScopeRef.current = fetchScopeId;
         fetch(`/api/workspaces/${workspace.id}/tasks`).then(r => r.json()).then(data => { 
+            if (workspaceFetchScopeRef.current !== fetchScopeId) return;
             const validData = Array.isArray(data) ? data.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0)) : [];
             setCards(validData); 
             setLoading(false); 
@@ -38,7 +144,9 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                 setSelectedMoveCol(columns[0]?.id || 'todo');
             }
             
-            if (!hasShownWelcome && user?.email) {
+            const widForWelcome = fetchScopeId;
+            if (user?.email && widForWelcome && welcomeNotifiedWorkspaceRef.current !== widForWelcome) {
+                welcomeNotifiedWorkspaceRef.current = widForWelcome;
                 const myCards = validData.filter(c => c && !c.archived && c.assignees && c.assignees.includes(user.email));
                 const expiringCount = myCards.filter(c => {
                     if (!c.dueDate) return false;
@@ -47,13 +155,25 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
                     return diffDays >= 0 && diffDays <= 3;
                 }).length;
                 const backlogCount = myCards.filter(c => c.columnId === 'backlog' || c.col === 'backlog').length;
-                
-                // Show toast with stats
-                showToast(t('alerts.welcome_stats', { total: myCards.length, expiring: expiringCount, backlog: backlogCount }) || `Workspace loaded: You have ${myCards.length} assigned cards (${expiringCount} expiring soon, ${backlogCount} in backlog).`);
-                setHasShownWelcome(true);
+
+                const welcomeMsg =
+                    t('alerts.welcome_stats', {
+                        total: myCards.length,
+                        expiring: expiringCount,
+                        backlog: backlogCount,
+                    }) ||
+                    `Workspace loaded: You have ${myCards.length} assigned cards (${expiringCount} expiring soon, ${backlogCount} in backlog).`;
+                showToast(welcomeMsg);
+                setSessionNotifications(pushWorkspaceNotificationSession(widForWelcome, welcomeMsg));
             }
         }).catch(console.error);
-        fetch('/api/users').then(r => r.json()).then(data => setAllUsers(Array.isArray(data) ? data : [])).catch(console.error);
+        fetch('/api/users')
+            .then((r) => r.json())
+            .then((data) => {
+                if (workspaceFetchScopeRef.current !== fetchScopeId) return;
+                setAllUsers(Array.isArray(data) ? data : []);
+            })
+            .catch(console.error);
         fetch('/api/config').then(r => r.json()).then(data => { if (data.aiConfig) setAiConfig(data.aiConfig); if (data.adminEmail) window.NT_ADMIN_EMAIL = data.adminEmail; }).catch(console.error);
         
         // Fetch unseen emojis
@@ -97,16 +217,21 @@ window.WorkspaceView = ({ workspace, onBack, user, onLogout, onThemeChange, them
         // Start polling loop
         const interval = setInterval(fetchUnseenEmojis, 10000);
         return () => clearInterval(interval);
-    }, [workspace.id, user]);
+    }, [wsNotificationStorageId, user]);
 
     const [editingCard, setEditingCard] = React.useState(null);
     const [tab, setTab] = React.useState('board');
     const [showMemberDropdown, setShowMemberDropdown] = React.useState(false);
     const memberDropdownRef = React.useRef(null);
+    const [showNotificationDropdown, setShowNotificationDropdown] = React.useState(false);
+    const notificationDropdownRef = React.useRef(null);
     React.useEffect(() => {
         const handleClickOutside = (event) => {
             if (memberDropdownRef.current && !memberDropdownRef.current.contains(event.target)) {
                 setShowMemberDropdown(false);
+            }
+            if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target)) {
+                setShowNotificationDropdown(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -545,7 +670,7 @@ User Request: ${aiInput}` : aiInput;
                 </div>
                 <div className="flex items-center gap-6 relative">
                     <div ref={memberDropdownRef} className={`p-2.5 rounded-xl transition cursor-pointer relative ${isDarkHeader ? "bg-white/10 hover:bg-white/20" : "bg-black/5 hover:bg-black/10"}`} 
-                         onClick={() => setShowMemberDropdown(!showMemberDropdown)}>
+                         onClick={() => { setShowNotificationDropdown(false); setShowMemberDropdown(!showMemberDropdown); }}>
                         <window.Icon name="users" size={18} className={isDarkHeader ? "text-white" : "text-black"} />
                         {showMemberDropdown && (
                             <div className="absolute top-full right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 z-[150] animate-pop text-black">
@@ -569,6 +694,87 @@ User Request: ${aiInput}` : aiInput;
                                             </div>
                                         );
                                     })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <div
+                        ref={notificationDropdownRef}
+                        className={`p-2.5 rounded-xl transition cursor-pointer relative ${isDarkHeader ? 'bg-white/10 hover:bg-white/20' : 'bg-black/5 hover:bg-black/10'}`}
+                        onClick={() => { setShowMemberDropdown(false); setShowNotificationDropdown(!showNotificationDropdown); }}
+                    >
+                        <window.Icon name="bell" size={18} className={isDarkHeader ? 'text-white' : 'text-black'} />
+                        {sessionNotifications.length > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center border-2 border-white">
+                                {sessionNotifications.length > 9 ? '9+' : sessionNotifications.length}
+                            </span>
+                        )}
+                        {showNotificationDropdown && (
+                            <div
+                                className="absolute top-full right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] max-w-[22rem] bg-white rounded-2xl shadow-2xl border border-gray-100 z-[150] animate-pop text-black overflow-hidden flex flex-col"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="flex justify-between items-center px-4 py-3 border-b border-gray-100 bg-gray-50/80">
+                                    <div className="min-w-0 flex-1 pr-2">
+                                        <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+                                            {t('labels.workspace_notifications') || 'Notifications'}
+                                        </p>
+                                        {wsNotificationStorageId ? (
+                                            <p
+                                                className="text-[10px] font-mono text-gray-500 truncate mt-1"
+                                                title={wsNotificationStorageId}
+                                            >
+                                                {(t('labels.notifications_workspace_id') || 'Workspace ID') + ': '}
+                                                {wsNotificationStorageId}
+                                            </p>
+                                        ) : null}
+                                    </div>
+                                    {sessionNotifications.length > 0 && (
+                                        <button
+                                            type="button"
+                                            className="text-[10px] font-black uppercase tracking-wider text-red-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 transition"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSessionNotifications(clearWorkspaceNotificationsSession(wsNotificationStorageId));
+                                            }}
+                                        >
+                                            {t('labels.clear_workspace_notifications') || 'Clear all'}
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="max-h-64 overflow-y-auto no-scrollbar p-2">
+                                    {sessionNotifications.length === 0 ? (
+                                        <p className="text-xs text-gray-400 text-center py-6 px-3">
+                                            {t('labels.no_workspace_notifications') || 'No notifications yet.'}
+                                        </p>
+                                    ) : (
+                                        sessionNotifications.map((n) => (
+                                            <div
+                                                key={n.id}
+                                                className="group flex gap-2 p-2.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-100 transition text-left"
+                                            >
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[11px] text-gray-800 leading-snug">{n.message}</p>
+                                                    {n.createdAt ? (
+                                                        <p className="text-[9px] text-gray-400 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                                                    ) : null}
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    title={t('actions.remove') || 'Remove'}
+                                                    className="shrink-0 p-1 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSessionNotifications(
+                                                            removeWorkspaceNotificationSession(wsNotificationStorageId, n.id)
+                                                        );
+                                                    }}
+                                                >
+                                                    <window.Icon name="x" size={14} />
+                                                </button>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         )}
