@@ -69,8 +69,8 @@
 
     /** Default placement: bottom-right for a typical maximized jukebox size. */
     function defaultBottomRight() {
-        const w = 320;
-        const h = 220;
+        const w = 56;
+        const h = 56;
         return clampPos(window.innerWidth - w - MARGIN, window.innerHeight - h - MARGIN, w, h);
     }
 
@@ -313,18 +313,7 @@
             };
         }, [cancelSnapFly]);
 
-        const rootStyle = {
-            left: pos.x,
-            top: pos.y,
-            transform: isDragging ? 'translateZ(0)' : undefined,
-            willChange: isDragging || snapFlying ? 'left, top' : 'auto',
-            transition: isDragging
-                ? 'none'
-                : snapFlying
-                  ? `left ${SNAP_MS}ms ${SNAP_EASE}, top ${SNAP_MS}ms ${SNAP_EASE}, box-shadow 0.28s ease`
-                  : 'box-shadow 0.25s ease, opacity 0.2s ease',
-        };
-
+        
         const dragHandleClass =
             'cursor-grab active:cursor-grabbing select-none touch-none';
 
@@ -332,11 +321,11 @@
             return (
                 <div
                     ref={rootRef}
-                    className="jukebox-floating jukebox-maximized bg-white p-6 rounded-[2rem] shadow-2xl border border-gray-100 animate-pop text-black"
-                    style={rootStyle}
-                    onTransitionEnd={handleSnapTransitionEnd}
+                    className="fixed bottom-5 right-5 z-[9999]  jukebox-maximized bg-white p-6 rounded-[2rem] shadow-2xl border border-gray-100 animate-pop text-black"
+                    
+                    
                 >
-                    <div className={`flex justify-between items-center mb-4 ${dragHandleClass}`} onPointerDown={(e) => startWindowDrag(e)}>
+                    <div className={`flex justify-between items-center mb-4 ${dragHandleClass}`} >
                         <h4 className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-400 flex-1 min-w-0 pr-2">
                             {t('labels.project_audio')}
                         </h4>
@@ -372,17 +361,13 @@
             return (
                 <div
                     ref={rootRef}
-                    className="jukebox-floating jukebox-minimized shadow-2xl"
-                    style={rootStyle}
-                    onTransitionEnd={handleSnapTransitionEnd}
+                    className="fixed bottom-5 right-5 z-[9999]  jukebox-minimized shadow-2xl"
+                    
+                    
                 >
                     <button
                         type="button"
-                        onPointerDown={(e) =>
-                            startWindowDrag(e, {
-                                onClickIfNoDrag: () => setMinimized(false),
-                            })
-                        }
+                        onClick={() => setMinimized(false)}
                         className="w-full h-full bg-black text-white flex items-center justify-center hover:scale-110 active:scale-90 transition animate-pop rounded-[inherit] overflow-hidden"
                     >
                         <window.Icon name="music" size={20} />
@@ -394,13 +379,13 @@
         return (
             <div
                 ref={rootRef}
-                className="jukebox-floating jukebox-maximized bg-black overflow-hidden flex flex-col animate-pop"
-                style={rootStyle}
-                onTransitionEnd={handleSnapTransitionEnd}
+                className="fixed bottom-5 right-5 z-[9999]  jukebox-maximized bg-black overflow-hidden flex flex-col animate-pop"
+                
+                
             >
                 <div
                     className={`p-3 flex justify-between items-center bg-gray-900/90 text-white ${dragHandleClass}`}
-                    onPointerDown={(e) => startWindowDrag(e)}
+                    
                 >
                     <span className="text-[8px] font-black uppercase tracking-[0.2em] opacity-50 flex-1 min-w-0 pr-2">
                         {t('labels.audio_streaming')}

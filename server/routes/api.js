@@ -482,8 +482,8 @@ router.get('/public/docs/:wsId/:folderSlug', async (req, res) => {
     
     res.json({ 
         workspace: { id: workspace._id, name: workspace.name }, 
-        folder: { id: folder._id, name: folder.name, slug: folder.slug, description: folder.description }, 
-        subfolders: subfolders.map(f => ({ id: f._id, name: f.name, parentId: f.parentId, description: f.description })),
+        folder: { id: folder._id, name: folder.name, slug: folder.slug, description: folder.description, environments: folder.environments }, 
+        subfolders: subfolders.map(f => ({ id: f._id, name: f.name, parentId: f.parentId, description: f.description, environments: f.environments })),
         docs 
     });
   } catch (e) {

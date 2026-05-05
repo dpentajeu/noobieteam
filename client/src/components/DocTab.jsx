@@ -69,6 +69,7 @@ window.DocTab = ({ workspaceId, user }) => {
     const [apiTab, setApiTab] = React.useState('Body');
     const [apiResponse, setApiResponse] = React.useState(null);
     const [isApiLoading, setIsApiLoading] = React.useState(false);
+    const [activeEnvId, setActiveEnvId] = React.useState('');
     const { t } = window.useTranslation();
 
     const handleSendRequest = async (doc) => {
@@ -77,6 +78,31 @@ window.DocTab = ({ workspaceId, user }) => {
         try {
             const start = Date.now();
             let url = doc.apiSpec?.url || '';
+            const docFolder = getRootFolder(doc.folderId);
+            const selectedEnv = docFolder?.environments?.find(e => e.id === activeEnvId);
+            if (selectedEnv && selectedEnv.baseUrl) {
+                if (/\{\{.*?\}\}/.test(url)) {
+                    url = url.replace(/\{\{.*?\}\}/g, selectedEnv.baseUrl);
+                } else if (url.startsWith('http')) {
+                    try {
+                        const parsedUrl = new URL(url);
+                        const parsedBase = new URL(selectedEnv.baseUrl);
+                        parsedUrl.protocol = parsedBase.protocol;
+                        parsedUrl.host = parsedBase.host;
+                        parsedUrl.port = parsedBase.port; parsedUrl.port = parsedBase.port;
+                        url = parsedUrl.toString();
+                    } catch (e) {
+                        console.warn('URL parsing failed during environment replacement:', e);
+                    }
+                } else {
+                    const match = url.match(/^([a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|localhost)(:\d+)?(\/.*)?$/);
+                    if (match) {
+                        url = selectedEnv.baseUrl.replace(/\/$/, '') + (match[3] || '');
+                    } else {
+                        url = selectedEnv.baseUrl.replace(/\/$/, '') + '/' + url.replace(/^\//, '');
+                    }
+                }
+            }
             
             const fetchHeaders = {};
             let isFormData = false;
@@ -318,10 +344,10 @@ window.DocTab = ({ workspaceId, user }) => {
                 }
                 
                 setDocs(prev => [...prev, ...allImported]);
-                showToast("Postman Collection imported successfully! 🚀");
+                showToast(t('alerts.postman_import_success'));
             } catch (err) {
                 console.error(err);
-                showAlert("Failed to parse or import Postman Collection: " + err.message, "Import Error");
+                showAlert(t('alerts.postman_import_error') + ": " + err.message, t('alerts.import_error_title'));
             }
             if (fileInputRef.current) fileInputRef.current.value = '';
         };
@@ -360,13 +386,13 @@ window.DocTab = ({ workspaceId, user }) => {
 
     const bulkDelete = () => {
         if (!selectedDocIds || selectedDocIds.size === 0) return;
-        showConfirm("Bulk Erase", `Delete ${selectedDocIds.size} selected documents? This cannot be undone.`, async () => {
+        showConfirm(t('actions.bulk_erase'), t('alerts.bulk_erase_confirm', { count: selectedDocIds.size }), async () => {
             const arr = Array.from(selectedDocIds);
             await fetch('/api/docs/bulk', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ docIds: arr }) });
             setDocs(prev => prev.filter(d => !arr.includes(d.id || d._id)));
             if (selectedDocId && arr.includes(selectedDocId)) setSelectedDocId(null);
             setSelectedDocIds(new Set());
-            showToast(`${arr.length} documents erased.`);
+            showToast(t('alerts.docs_erased', { count: arr.length }));
         });
     };
 
@@ -377,7 +403,7 @@ window.DocTab = ({ workspaceId, user }) => {
         setDocs(prev => prev.map(d => arr.includes(d.id || d._id) ? { ...d, folderId: targetFolderId } : d));
         setSelectedDocIds(new Set());
         setShowBulkMoveDropdown(false);
-        showToast(`${arr.length} documents moved.`);
+        showToast(t('alerts.docs_moved', { count: arr.length }));
     };
 
     const deleteDoc = async (id) => {
@@ -392,6 +418,15 @@ window.DocTab = ({ workspaceId, user }) => {
 
     const activeDoc = selectedDocId ? docs.find(d => (d.id === selectedDocId || d._id === selectedDocId)) : null;
     const activeFolder = selectedFolderId && !selectedDocId ? folders.find(f => (f.id === selectedFolderId || f._id === selectedFolderId)) : null;
+    
+    // Recursive helper to get the root folder to inherit environments
+    const getRootFolder = (fId) => {
+        if (!fId) return null;
+        const f = folders.find(x => x.id === fId || x._id === fId);
+        if (!f) return null;
+        if (!f.parentId) return f;
+        return getRootFolder(f.parentId);
+    };
     const isAnySelected = selectedDocIds && selectedDocIds.size > 0;
 
     if (loading) return <div className="p-10 text-center animate-pulse">Loading Document Nexus...</div>;
@@ -409,10 +444,10 @@ window.DocTab = ({ workspaceId, user }) => {
                     )}
                     <div className="flex gap-2">
                         <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={(e) => importPostmanCollection(e.target.files[0])} />
-                        <button onClick={() => fileInputRef.current && fileInputRef.current.click()} className="p-2 bg-orange-50 hover:bg-orange-100 rounded-lg transition text-orange-500 cursor-pointer" title="Import Postman Collection"><window.Icon name="upload-cloud" size={16} /></button>
-                        <button onClick={addFolder} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition text-purple-500 cursor-pointer" title="New Folder"><window.Icon name="folder-plus" size={16} /></button>
-                        <button onClick={() => addDoc('TEXT')} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition text-blue-500 cursor-pointer" title="New Document"><window.Icon name="file-text" size={16} /></button>
-                        <button onClick={() => addDoc('API')} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition text-emerald-500 cursor-pointer" title="New API Endpoint"><window.Icon name="zap" size={16} /></button>
+                        <button onClick={() => fileInputRef.current && fileInputRef.current.click()} className="p-2 bg-orange-50 hover:bg-orange-100 rounded-lg transition text-orange-500 cursor-pointer" title={t('labels.import_postman_tooltip')}><window.Icon name="upload-cloud" size={16} /></button>
+                        <button onClick={addFolder} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition text-purple-500 cursor-pointer" title={t('actions.new_folder')}><window.Icon name="folder-plus" size={16} /></button>
+                        <button onClick={() => addDoc('TEXT')} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition text-blue-500 cursor-pointer" title={t('actions.new_document')}><window.Icon name="file-text" size={16} /></button>
+                        <button onClick={() => addDoc('API')} className="p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition text-emerald-500 cursor-pointer" title={t('actions.new_endpoint')}><window.Icon name="zap" size={16} /></button>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-1">
@@ -436,7 +471,7 @@ window.DocTab = ({ workspaceId, user }) => {
                                     <div className="pl-6 mt-1 space-y-1">
                                         {folders.filter(sub => sub.parentId === folderId).map(sub => (
                                             <div key={sub.id || sub._id} className="mb-1">
-                                                <div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group transition ${selectedFolderId === (sub.id || sub._id) && !selectedDocId ? 'bg-blue-50' : 'hover:bg-gray-50'}`} onClick={() => { toggleFolder(sub.id || sub._id); setSelectedFolderId(sub.id || sub._id); setSelectedDocId(null); setShowMobileSidebar(false); }}>
+                                                <div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group transition ${selectedFolderId === (sub.id || sub._id) && !selectedDocId ? 'bg-blue-50' : 'hover:bg-gray-50'}`} onClick={() => toggleFolder(sub.id || sub._id)}>
                                                     <div className="flex items-center gap-2">
                                                         <window.Icon name={expandedFolders[sub.id || sub._id] ? "folder-open" : "folder"} size={14} className="text-gray-300" />
                                                         <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{sub.name}</span>
@@ -460,8 +495,8 @@ window.DocTab = ({ workspaceId, user }) => {
                                                                         <span className="text-[11px] font-bold truncate">{doc.title || t('labels.untitled')}</span>
                                                                     </div>
                                                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                                                                        <button onClick={(e) => { e.stopPropagation(); moveToFolder(docId, null); }} className="p-1 text-gray-400 hover:text-gray-600" title="Move to Root"><window.Icon name="log-out" size={12} /></button>
-                                                                        <button onClick={(e) => { e.stopPropagation(); deleteDoc(docId); }} className="p-1 text-gray-400 hover:text-red-500" title="Delete Document"><window.Icon name="trash" size={12} /></button>
+                                                                        <button onClick={(e) => { e.stopPropagation(); moveToFolder(docId, null); }} className="p-1 text-gray-400 hover:text-gray-600" title={t('actions.move_selected')}><window.Icon name="log-out" size={12} /></button>
+                                                                        <button onClick={(e) => { e.stopPropagation(); deleteDoc(docId); }} className="p-1 text-gray-400 hover:text-red-500" title={t('actions.destroy_document')}><window.Icon name="trash" size={12} /></button>
                                                                     </div>
                                                                 </div>
                                                             );
@@ -524,16 +559,16 @@ window.DocTab = ({ workspaceId, user }) => {
             </div>
             {isAnySelected && (
                         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur shadow-2xl border border-gray-200 rounded-full px-6 py-3 flex items-center gap-4 z-[2000] animate-fly-up-fade">
-                            <span className="text-xs font-black text-gray-800">{selectedDocIds.size} selected</span>
+                            <span className="text-xs font-black text-gray-800">{t('labels.selected_count', { count: selectedDocIds.size })}</span>
                             <div className="h-4 w-px bg-gray-300"></div>
                             
                             <div className="relative">
                                 <button onClick={() => setShowBulkMoveDropdown(!showBulkMoveDropdown)} className="flex items-center gap-2 text-blue-500 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition text-[10px] font-black uppercase tracking-widest">
-                                    <window.Icon name="folder-input" size={14} /> Move
+                                    <window.Icon name="folder-input" size={14} /> {t('actions.move_selected')}
                                 </button>
                                 {showBulkMoveDropdown && (
                                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-white border border-gray-100 shadow-xl rounded-2xl overflow-hidden py-1">
-                                        <button onClick={() => bulkMove(null)} className="w-full text-left px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-50"><window.Icon name="log-out" size={14}/> Root</button>
+                                        <button onClick={() => bulkMove(null)} className="w-full text-left px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2 border-b border-gray-50"><window.Icon name="log-out" size={14}/> {t('labels.root')}</button>
                                         {folders.map(f => (
                                             <button key={f.id || f._id} onClick={() => bulkMove(f.id || f._id)} className="w-full text-left px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-2">
                                                 <window.Icon name="folder" size={14}/> {f.name}
@@ -544,7 +579,7 @@ window.DocTab = ({ workspaceId, user }) => {
                             </div>
                             
                             <button onClick={bulkDelete} className="flex items-center gap-2 text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg transition text-[10px] font-black uppercase tracking-widest">
-                                <window.Icon name="trash-2" size={14} /> Delete
+                                <window.Icon name="trash-2" size={14} /> {t('actions.delete_selected')}
                             </button>
                             <div className="h-4 w-px bg-gray-300"></div>
                             <button onClick={() => { setSelectedDocIds(new Set()); setShowBulkMoveDropdown(false); }} className="text-gray-400 hover:bg-gray-100 p-1.5 rounded-full transition">
@@ -589,10 +624,44 @@ window.DocTab = ({ workspaceId, user }) => {
                                     </div>
                                     <window.ModernDocEditor key={activeDoc.id || activeDoc._id} initialContent={activeDoc.content} editable={isDocEditing} onChange={(jsonStr) => updateDoc(activeDoc.id || activeDoc._id, { content: jsonStr })} />
                                 </div>
-                            ) : (
-                                <div className="max-w-6xl mx-auto flex flex-col gap-6">
-                                    {/* API Endpoint Config */}
+                            ) : (() => {
+                                const docFolder = getRootFolder(activeDoc.folderId);
+                                const docEnvs = docFolder?.environments || [];
+                                const selectedEnv = docEnvs.find(e => e.id === activeEnvId);
+                                let displayUrl = activeDoc.apiSpec?.url || '';
+                                if (selectedEnv && selectedEnv.baseUrl) {
+                                    if (/\{\{.*?\}\}/.test(displayUrl)) {
+                                        displayUrl = displayUrl.replace(/\{\{.*?\}\}/g, selectedEnv.baseUrl);
+                                    } else if (displayUrl.startsWith('http')) {
+                                        try {
+                                            const parsedUrl = new URL(displayUrl);
+                                            const parsedBase = new URL(selectedEnv.baseUrl);
+                                            parsedUrl.protocol = parsedBase.protocol;
+                                            parsedUrl.host = parsedBase.host;
+                        parsedUrl.port = parsedBase.port; parsedUrl.port = parsedBase.port;
+                                            displayUrl = parsedUrl.toString();
+                                        } catch (e) {}
+                                    } else {
+                                        const match = displayUrl.match(/^([a-zA-Z0-9.-]+\.[a-zA-Z]{2,}|localhost)(:\d+)?(\/.*)?$/);
+                                        if (match) {
+                                            displayUrl = selectedEnv.baseUrl.replace(/\/$/, '') + (match[3] || '');
+                                        } else {
+                                            displayUrl = selectedEnv.baseUrl.replace(/\/$/, '') + '/' + displayUrl.replace(/^\//, '');
+                                        }
+                                    }
+                                }
+                                return (<div className="max-w-6xl mx-auto flex flex-col gap-6">{/* API Endpoint Config */}
                                     <div className="bg-white p-6 rounded-[2rem] shadow-lg border border-gray-100 flex items-center gap-4">
+                                        {docEnvs.length > 0 && (
+                                            <select 
+                                                className="bg-purple-50 text-purple-700 font-bold text-xs px-4 py-3 rounded-xl border border-purple-100 outline-none cursor-pointer"
+                                                value={activeEnvId}
+                                                onChange={e => setActiveEnvId(e.target.value)}
+                                            >
+                                                <option value="">{t('labels.no_environment')}</option>
+                                                {docEnvs.map(env => <option key={env.id} value={env.id}>{env.name}</option>)}
+                                            </select>
+                                        )}
                                         <select 
                                             className="bg-gray-50 text-black font-black text-xs px-4 py-3 rounded-xl border border-gray-100 outline-none uppercase tracking-widest cursor-pointer"
                                             value={activeDoc.apiSpec?.method}
@@ -603,7 +672,7 @@ window.DocTab = ({ workspaceId, user }) => {
                                         <input 
                                             className="flex-1 bg-gray-50 text-black font-mono text-sm px-6 py-3 rounded-xl border border-gray-100 outline-none focus:ring-2 focus:ring-blue-500 transition"
                                             placeholder="https://api.example.com/v1/endpoint"
-                                            value={activeDoc.apiSpec?.url}
+                                            value={displayUrl}
                                             onChange={e => updateDoc(activeDoc.id || activeDoc._id, { apiSpec: { ...activeDoc.apiSpec, url: e.target.value } })}
                                         />
                                         <button onClick={() => handleSendRequest(activeDoc)} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition shadow-lg shadow-blue-200" disabled={isApiLoading}>{isApiLoading ? t('actions.sending') : t('actions.send_request')}</button>
@@ -615,7 +684,7 @@ window.DocTab = ({ workspaceId, user }) => {
                                         <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 flex flex-col overflow-hidden">
                                             <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex gap-6 text-[10px] font-black uppercase tracking-widest text-gray-500">
                                                 {['Body', 'Headers', 'Params', 'Auth'].map(tab => (
-                                                    <button key={tab} onClick={() => setApiTab(tab)} className={`transition pb-1 ${apiTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'hover:text-black'}`}>{tab}</button>
+                                                    <button key={tab} onClick={() => setApiTab(tab)} className={`transition pb-1 ${apiTab === tab ? 'text-blue-600 border-b-2 border-blue-600' : 'hover:text-black'}`}>{t('labels.' + tab.toLowerCase())}</button>
                                                 ))}
                                             </div>
                                             <div className="flex-1 p-6 overflow-auto">
@@ -662,7 +731,7 @@ window.DocTab = ({ workspaceId, user }) => {
                                         {/* Response Viewer */}
                                         <div className="bg-gray-900 rounded-[2rem] shadow-2xl border border-gray-800 flex flex-col overflow-hidden text-gray-300">
                                             <div className="bg-gray-800/50 px-6 py-4 border-b border-gray-800 flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                                <span className="text-gray-400">Response</span>
+                                                <span className="text-gray-400">{t('labels.response')}</span>
                                                 {apiResponse && (
                                                     <div className="flex gap-4">
                                                         <span className={apiResponse.status === 200 || apiResponse.status === 201 ? 'text-emerald-400' : 'text-red-400'}>{t('labels.status')}: {apiResponse.status} {apiResponse.statusText}</span>
@@ -674,18 +743,19 @@ window.DocTab = ({ workspaceId, user }) => {
                                                 {isApiLoading ? (
                                                     <div className="flex items-center justify-center h-full gap-4 text-blue-400 animate-pulse">
                                                         <window.Icon name="loader" size={24} className="animate-spin" />
-                                                        <span>{t('actions.sending')}</span>
+                                                        <span>{t('alerts.sending_request')}</span>
                                                     </div>
                                                 ) : apiResponse ? (
                                                     <pre>{typeof apiResponse.data === 'object' ? JSON.stringify(apiResponse.data, null, 2) : apiResponse.data}</pre>
                                                 ) : (
-                                                    <div className="text-gray-600 flex items-center justify-center h-full">Hit Send Request to execute the API call.</div>
+                                                    <div className="text-gray-600 flex items-center justify-center h-full">{t('alerts.api_execution_placeholder')}</div>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            )}
+                                );
+                            })()}
                         </div>
                     </div>
                 ) : activeFolder ? (
@@ -697,10 +767,12 @@ window.DocTab = ({ workspaceId, user }) => {
                                 onChange={e => {
                                     const val = e.target.value;
                                     setFolders(prev => prev.map(f => (f.id === activeFolder.id || f._id === activeFolder._id) ? { ...f, name: val } : f));
-                                    fetch(`/api/folders/${activeFolder.id || activeFolder._id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name: val }) });
+                                }}
+                                onBlur={() => {
+                                    fetch(`/api/folders/${activeFolder.id || activeFolder._id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name: activeFolder.name }) });
                                 }}
                             />
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Folder Overview</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t('labels.folder_overview')}</span>
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 md:p-10 bg-[#FAFAFA]">
                             <div className="max-w-4xl mx-auto flex flex-col h-full">
@@ -709,6 +781,49 @@ window.DocTab = ({ workspaceId, user }) => {
                                         {isDocEditing ? t('actions.done_editing') || 'Done Editing' : t('actions.edit_document') || 'Edit Readme'}
                                     </button>
                                 </div>
+                                
+                                
+                                {!activeFolder.parentId && (
+                                <div className="mb-8 bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-gray-500 mb-4">{t('labels.environments')}</h3>
+                                    <div className="space-y-3 mb-4">
+                                        {(activeFolder.environments || []).map(env => (
+                                            <div key={env.id} className="flex gap-4 items-center bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                                <input className="bg-transparent font-bold text-xs outline-none w-1/3" value={env.name} onChange={e => {
+                                                    const val = e.target.value;
+                                                    const newEnvs = activeFolder.environments.map(en => en.id === env.id ? { ...en, name: val } : en);
+                                                    setFolders(prev => prev.map(f => (f.id === activeFolder.id || f._id === activeFolder._id) ? { ...f, environments: newEnvs } : f));
+                                                }}
+                                                onBlur={() => {
+                                                    fetch(`/api/folders/${activeFolder.id || activeFolder._id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ environments: activeFolder.environments }) });
+                                                }} placeholder={t('labels.env_name_placeholder')} />
+                                                <input className="bg-transparent font-mono text-xs outline-none flex-1" value={env.baseUrl} onChange={e => {
+                                                    const val = e.target.value;
+                                                    const newEnvs = activeFolder.environments.map(en => en.id === env.id ? { ...en, baseUrl: val } : en);
+                                                    setFolders(prev => prev.map(f => (f.id === activeFolder.id || f._id === activeFolder._id) ? { ...f, environments: newEnvs } : f));
+                                                }}
+                                                onBlur={() => {
+                                                    fetch(`/api/folders/${activeFolder.id || activeFolder._id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ environments: activeFolder.environments }) });
+                                                }} placeholder={t('labels.env_url_placeholder')} />
+                                                <button onClick={() => {
+                                                    const newEnvs = activeFolder.environments.filter(en => en.id !== env.id);
+                                                    setFolders(prev => prev.map(f => (f.id === activeFolder.id || f._id === activeFolder._id) ? { ...f, environments: newEnvs } : f));
+                                                    fetch(`/api/folders/${activeFolder.id || activeFolder._id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ environments: newEnvs }) });
+                                                }} className="text-red-400 hover:text-red-600 transition"><window.Icon name="trash" size={14}/></button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button onClick={() => {
+                                        const newEnv = { id: Date.now().toString(), name: 'New Env', baseUrl: 'https://' };
+                                        const newEnvs = [...(activeFolder.environments || []), newEnv];
+                                        setFolders(prev => prev.map(f => (f.id === activeFolder.id || f._id === activeFolder._id) ? { ...f, environments: newEnvs } : f));
+                                        fetch(`/api/folders/${activeFolder.id || activeFolder._id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ environments: newEnvs }) });
+                                    }} className="px-4 py-2 bg-gray-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-50 transition border border-gray-100 flex items-center gap-2">
+                                        <window.Icon name="plus" size={14}/> {t('actions.add_environment')}
+                                    </button>
+                                </div>
+                                )}
+
                                 <window.ModernDocEditor key={activeFolder.id || activeFolder._id} initialContent={activeFolder.description || ''} editable={isDocEditing} onChange={(jsonStr) => {
                                     setFolders(prev => prev.map(f => (f.id === activeFolder.id || f._id === activeFolder._id) ? { ...f, description: jsonStr } : f));
                                     fetch(`/api/folders/${activeFolder.id || activeFolder._id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ description: jsonStr }) });

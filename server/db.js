@@ -137,7 +137,12 @@ const folderSchema = new mongoose.Schema({
   order: Number,
   createdBy: String,
   description: String,
-  parentId: String
+  parentId: String,
+  environments: [{
+    id: String,
+    name: String,
+    baseUrl: String
+  }]
 }, { timestamps: true });
 folderSchema.set('toJSON', { virtuals: true });
 const Folder = mongoose.model('Folder', folderSchema);

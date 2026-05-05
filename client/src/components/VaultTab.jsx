@@ -164,7 +164,8 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
                 {secrets.length === 0 && (
                     <div className="py-20 text-center flex flex-col items-center">
                         <window.Icon name="lock" size={48} className="text-gray-100 mb-4" />
-                        <p className="text-gray-300 italic text-sm font-medium">Vault is currently empty. Secure your first credential above.</p>
+                        <p className="text-gray-300 italic text-sm font-medium">{t('labels.vault_empty')}</p>
+                        <p className="text-gray-200 text-xs">{t('labels.secure_first_credential')}</p>
                     </div>
                 )}
             </div>

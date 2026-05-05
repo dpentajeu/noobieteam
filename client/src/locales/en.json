@@ -62,7 +62,12 @@
     "add_secret": "Add Secret",
     "check_all": "Check All",
     "new_task": "New Task",
-    "submit_intel": "Submit Intel"
+    "submit_intel": "Submit Intel",
+    "import_postman": "Import Postman Collection",
+    "add_environment": "Add Environment",
+    "bulk_erase": "Bulk Erase",
+    "move_selected": "Move Selected",
+    "delete_selected": "Delete Selected"
   },
   "labels": {
     "email": "Email",
@@ -172,7 +177,20 @@
     "url": "URL (Optional)",
     "system": "System",
     "attachment_preview": "Attachment Preview",
-    "new_task": "New Task"
+    "new_task": "New Task",
+    "environments": "Environments",
+    "no_environment": "No Environment",
+    "folder_overview": "Folder Overview",
+    "selected_count": "{count} selected",
+    "root": "Root",
+    "body": "Body",
+    "params": "Params",
+    "auth": "Auth",
+    "env_name_placeholder": "e.g. Staging",
+    "env_url_placeholder": "https://api.staging.example.com",
+    "vault_empty": "Vault is currently empty.",
+    "secure_first_credential": "Secure your first credential above.",
+    "import_postman_tooltip": "Import Postman Collection"
   },
   "alerts": {
     "welcome_back": "Welcome back, {name}! 🚀",
@@ -241,6 +259,14 @@
     "no_communication": "No communication logged.",
     "no_archived_cards": "No archived cards in this column.",
     "attachment_preview": "Attachment Preview",
-    "welcome_stats": "Welcome! You have {total} assigned tasks, {expiring} expiring soon, and {backlog} in backlog."
+    "welcome_stats": "Welcome! You have {total} assigned tasks, {expiring} expiring soon, and {backlog} in backlog.",
+    "postman_import_success": "Postman Collection imported successfully! 🚀",
+    "postman_import_error": "Failed to parse or import Postman Collection",
+    "import_error_title": "Import Error",
+    "bulk_erase_confirm": "Delete {count} selected documents? This cannot be undone.",
+    "docs_erased": "{count} documents erased.",
+    "docs_moved": "{count} documents moved.",
+    "sending_request": "Sending Request...",
+    "api_execution_placeholder": "Hit Send Request to execute the API call."
   }
 }
