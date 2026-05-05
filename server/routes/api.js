@@ -564,3 +564,5 @@ router.put('/emojis/mark-viewed', async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
+
+// EOF: verified crypto auth fix
