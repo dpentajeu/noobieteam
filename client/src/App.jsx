@@ -29,7 +29,10 @@ window.AuthScreen = ({ onAuthSuccess }) => {
     const handleGoogleResponse = async (response) => {
         try {
             const res = await fetch('/api/auth/google', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ credential: response.credential }) });
-            if (!res.ok) throw new Error('Google authentication failed on server.');
+            if (!res.ok) {
+                const errData = await res.json().catch(() => null);
+                throw new Error(errData?.error || 'Google authentication failed on server.');
+            }
             const user = await res.json();
             onAuthSuccess(user);
             showToast(t('alerts.welcome_back', { name: user.name || user.email.split('@')[0] }));

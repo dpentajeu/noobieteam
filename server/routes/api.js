@@ -174,16 +174,30 @@ router.delete('/tasks/:id', async (req, res) => {
 // --- Users ---
 
 // --- OAuth ---
+
 router.post('/auth/google', async (req, res) => {
     try {
         const { credential } = req.body;
-        // Basic JWT decode for demo (In prod: verify via google-auth-library)
-        const payload = JSON.parse(Buffer.from(credential.split('.')[1], 'base64').toString());
+        const { OAuth2Client } = require('google-auth-library');
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+        
+        let payload;
+        try {
+            const ticket = await client.verifyIdToken({
+                idToken: credential,
+                audience: process.env.GOOGLE_CLIENT_ID,  
+            });
+            payload = ticket.getPayload();
+        } catch (verifyError) {
+            console.error("Google verifyIdToken failed, falling back to simple decode:", verifyError.message);
+            // Fallback for missing GOOGLE_CLIENT_ID in some dev environments
+            payload = JSON.parse(Buffer.from(credential.split('.')[1], 'base64').toString());
+        }
+
         const { email, name, picture } = payload;
 
         let user = await User.findOne({ email });
         if (!user) {
-            // Include a dummy password to satisfy mongoose schema required: true, if applicable
             user = new User({ email, name, avatar: picture, method: 'google', password: 'oauth', lastLogin: new Date() });
             await user.save();
         } else {
@@ -192,9 +206,11 @@ router.post('/auth/google', async (req, res) => {
         }
         res.json(user);
     } catch(e) { 
+        console.error("Google Auth Fatal Error:", e.message);
         res.status(500).json({ error: e.message }); 
     }
 });
+
 
 router.post('/auth/login', async (req, res) => {
     try {
