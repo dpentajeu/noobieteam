@@ -49,7 +49,10 @@ window.AuthScreen = ({ onAuthSuccess }) => {
         if (mode === 'signup') {
             try {
                 const res = await fetch('/api/users', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ email, password, name: email.split('@')[0] }) });
-                if (!res.ok) return showAlert(t('alerts.duplicate_user'), t('alerts.duplicate_user_title'));
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => null);
+                    return showAlert(errData?.error || t('alerts.duplicate_user'), t('alerts.duplicate_user_title'));
+                }
                 setMode('login');
                 showAlert(t('alerts.signup_sync'), t('alerts.signup_sync_title'));
             } catch(e) { showAlert(e.message, 'Error'); }
