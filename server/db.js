@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 
