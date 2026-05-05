@@ -10,14 +10,10 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
     const addSecret = async function() {
         if (!newSecret.service || !newSecret.account || !newSecret.password) return showAlert(t('alerts.missing_fields'), 'Missing Intel');
         try {
-            const res = await fetch('/api/workspaces/' + workspace.id + '/vault/encrypt', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ text: JSON.stringify(newSecret), password: user?.vaultPin || user?.password }) 
-            });
-            if (!res.ok) throw new Error('Encryption failed');
-            const data = await res.json();
-            const encrypted = data.encrypted;
+            const CryptoJS = window.CryptoJS;
+            if (!CryptoJS) throw new Error('CryptoJS library not loaded');
+            const pass = user?.vaultPin || user?.password;
+            const encrypted = CryptoJS.AES.encrypt(JSON.stringify(newSecret), pass).toString();
             
             const updatedSecrets = secrets.concat([{ id: window.generateId('sec'), service: newSecret.service, url: newSecret.url, value: encrypted }]);
             
@@ -74,14 +70,12 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser }) {
         setRevealError('');
         try {
             const s = secrets.find(x => (x.id === revealPrompt.id || x._id === revealPrompt.id));
-            const res = await fetch('/api/workspaces/' + workspace.id + '/vault/decrypt', { 
-                method: 'POST', 
-                headers: {'Content-Type':'application/json'}, 
-                body: JSON.stringify({ cipherBase64: s.value, password: revealPrompt.pass }) 
-            });
-            if (!res.ok) throw new Error(t('alerts.credentials_mismatch'));
-            const data = await res.json();
-            setRevealData(JSON.parse(data.decrypted));
+            const CryptoJS = window.CryptoJS;
+            if (!CryptoJS) throw new Error('CryptoJS library not loaded');
+            const bytes = CryptoJS.AES.decrypt(s.value, revealPrompt.pass);
+            const decryptedData = bytes.toString(CryptoJS.enc.Utf8);
+            if (!decryptedData) throw new Error(t('alerts.credentials_mismatch'));
+            setRevealData(JSON.parse(decryptedData));
             setRevealPrompt({ isOpen: false, id: null, pass: '' });
             showToast(t('alerts.decryption_successful'));
         } catch (err) {
