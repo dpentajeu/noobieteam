@@ -542,6 +542,7 @@ window.DocTab = ({ workspaceId, user, onLogActivity }) => {
                         const folderId = folder.id || folder._id;
                         const isExpanded = expandedFolders[folderId];
                         const folderDocs = docs.filter(d => d.folderId === folderId);
+                        const isAnySelected = selectedDocIds && selectedDocIds.size > 0;
                         return (
                             <div key={folderId} className="mb-2">
                                 <div className={`flex items-center justify-between p-2 rounded-xl cursor-pointer group transition ${selectedFolderId === folderId && !selectedDocId ? 'bg-blue-50' : 'hover:bg-gray-50'}`} onClick={() => { toggleFolder(folderId); setSelectedFolderId(folderId); setSelectedDocId(null); setShowMobileSidebar(false); }}>

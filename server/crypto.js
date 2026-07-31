@@ -86,4 +86,39 @@ const decryptVaultSecret = (encryptedHex, ivHex, authTagHex, password) => {
     }
 };
 
-module.exports = { encryptVaultSecret, decryptVaultSecret };
+// --- Server-managed secret encryption (no user PIN needed) ---
+// Used for credentials the server itself must use without user interaction (e.g. Bitbucket app password).
+// Key comes from env var NOOBIE_SERVER_KEY, with a deterministic dev fallback so re-encryption isn't needed across restarts.
+const SERVER_KEY = (() => {
+    const fromEnv = process.env.NOOBIE_SERVER_KEY;
+    if (typeof fromEnv === 'string' && fromEnv.length >= 32) {
+        return crypto.createHash('sha256').update(fromEnv).digest();
+    }
+    return crypto.createHash('sha256').update('noobieteam-dev-server-key-do-not-use-in-prod').digest();
+})();
+
+const encryptServerSecret = (plaintext) => {
+    if (typeof plaintext !== 'string' || plaintext.length === 0) {
+        throw new Error('encryptServerSecret: plaintext is required');
+    }
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv(ALGORITHM, SERVER_KEY, iv);
+    let encrypted = cipher.update(plaintext, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return {
+        iv: iv.toString('hex'),
+        authTag: cipher.getAuthTag().toString('hex'),
+        value: encrypted
+    };
+};
+
+const decryptServerSecret = ({ iv, authTag, value }) => {
+    if (!iv || !authTag || !value) throw new Error('decryptServerSecret: incomplete payload');
+    const decipher = crypto.createDecipheriv(ALGORITHM, SERVER_KEY, Buffer.from(iv, 'hex'));
+    decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+    let decrypted = decipher.update(value, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+};
+
+module.exports = { encryptVaultSecret, decryptVaultSecret, encryptServerSecret, decryptServerSecret };
