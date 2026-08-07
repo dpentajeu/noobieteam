@@ -11,8 +11,7 @@ window.MyTasksView = ({ user, workspaces, onOpenTask, onBack, theme, onThemeChan
     const [statusFilter, setStatusFilter] = React.useState('');
     const [keyword, setKeyword] = React.useState('');
 
-    const headerClass = window.THEMES.find(x => x.id === theme)?.class || 'theme-default';
-    const isDarkHeader = ['dark', 'darkblue', 'green', 'ocean'].includes(theme);
+    const hdr = window.getHeaderTheme(theme);
 
     React.useEffect(() => {
         if (!user?.email) return;
@@ -76,10 +75,10 @@ window.MyTasksView = ({ user, workspaces, onOpenTask, onBack, theme, onThemeChan
 
     return (
         <div className="min-h-screen bg-white animate-fade-in flex flex-col text-black">
-            <nav className={`h-16 px-6 lg:px-12 flex items-center justify-between transition-colors duration-500 shadow-sm ${headerClass}`}>
+            <nav className={`h-16 px-6 lg:px-12 flex items-center justify-between transition-colors duration-300 shadow-sm ${hdr.nav}`}>
                 <div className="flex items-center gap-6">
-                    <button onClick={onBack} className={`p-2.5 hover:bg-black/5 rounded-xl transition ${isDarkHeader ? 'text-white' : 'text-black'}`}><window.Icon name="arrow-left" size={20} /></button>
-                    <div className={`leading-none ${isDarkHeader ? 'text-white' : 'text-black'}`}>
+                    <button type="button" onClick={onBack} title={t('actions.back') || 'Back'} className={`p-2.5 rounded-xl transition ${hdr.ghost}`}><window.Icon name="arrow-left" size={20} /></button>
+                    <div className={`leading-none ${hdr.title}`}>
                         <h2 className="text-lg font-black tracking-tighter italic mr-4">{t('app_name')}</h2>
                         <p className="text-[8px] font-black uppercase tracking-[0.4em] opacity-50 mt-1.5">{t('labels.my_tasks') || 'My Tasks'}</p>
                     </div>
@@ -166,7 +165,7 @@ window.MyTasksView = ({ user, workspaces, onOpenTask, onBack, theme, onThemeChan
                                     <div className="flex -space-x-2">
                                         {(tk.assignees || []).filter(Boolean).slice(0, 3).map(email => {
                                             const m = getMemberData(email);
-                                            return <window.Avatar key={email} label={email.charAt(0).toUpperCase()} src={m.avatar} size="sm" active />;
+                                            return <window.Avatar key={email} label={window.getInitials(m)} src={window.getImageUrl(m.avatar)} size="sm" active />;
                                         })}
                                     </div>
                                 </div>

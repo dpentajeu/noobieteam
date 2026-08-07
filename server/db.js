@@ -42,7 +42,10 @@ const userSchema = new mongoose.Schema({
   homeBackgroundImage: String,
   method: { type: String, default: 'local' },
   vaultPin: { type: String }, // Hashed PIN for Google OAuth vault decryption
-  lastLogin: { type: Date }
+  lastLogin: { type: Date },
+  // Global system role. Per-workspace role lives in workspaceSchema.members[].role (OWNER/MEMBER).
+  systemRole: { type: String, enum: ['SUPERADMIN', 'USER'], default: 'USER' },
+  banned: { type: Boolean, default: false } // Set by a superadmin; blocks login and all API access.
 }, { timestamps: true });
 
 const workspaceSchema = new mongoose.Schema({
@@ -102,8 +105,14 @@ const taskSchema = new mongoose.Schema({
   attachments: [{
     id: String,
     name: String,
-    dataUrl: String,
-    size: String
+    // Storage key under <repo>/uploads/, e.g. "task_media/1753...-ab12.png".
+    path: String,
+    mimeType: String,
+    byteSize: Number,
+    size: String, // human-readable, e.g. "412.3 KB"
+    // Legacy: files used to be base64-embedded here instead of uploaded. Kept so
+    // attachments created before the switch still render. New uploads set `path`.
+    dataUrl: String
   }]
 }, { timestamps: true, optimisticConcurrency: true });
 
@@ -133,6 +142,36 @@ const docSchema = new mongoose.Schema({
     headers: [{ key: String, value: String }],
     queryParams: [{ key: String, value: String }],
     body: String,
+    // Auth helper selection. The generated Authorization header / API-key pair is
+    // derived from this at request time rather than stored, so switching type
+    // never leaves a stale header behind.
+    auth: {
+      type: { type: String, enum: ['none', 'bearer', 'basic', 'apikey'], default: 'none' },
+      token: String,
+      username: String,
+      password: String,
+      key: String,
+      value: String,
+      addTo: { type: String, enum: ['header', 'query'], default: 'header' }
+    },
+    // Declarative response checks, stored as data and evaluated by the client.
+    // Deliberately not user-supplied JavaScript: collections are shared between
+    // workspace members and published publicly, so anything executable here
+    // would run in a stranger's browser on our own origin.
+    assertions: [{
+      source: { type: String, enum: ['status', 'statusText', 'time', 'size', 'header', 'body', 'rawBody'], default: 'status' },
+      path: String,   // header name, or a dot/bracket path into the JSON body
+      op: { type: String, enum: ['eq', 'ne', 'lt', 'gt', 'contains', 'notContains', 'exists', 'notExists'], default: 'eq' },
+      value: String
+    }],
+    // Pull values out of a response and into environment variables, so one
+    // request can feed the next — the login-then-use-the-token flow that is
+    // otherwise the most common reason to reach for a script.
+    extract: [{
+      from: { type: String, enum: ['body', 'header', 'rawBody'], default: 'body' },
+      path: String,
+      into: String    // environment variable name
+    }],
     examples: [{ name: String, requestBody: String, responseBody: String, status: Number }]
   },
   passwordProtected: { type: Boolean, default: false },
@@ -149,6 +188,20 @@ const folderSchema = new mongoose.Schema({
   workspaceId: { type: String, required: true },
   name: { type: String, required: true },
   slug: { type: String }, // For dynamic URL e.g. folder name in url
+  // Which surface this folder belongs to: the GitBook-style Docs page or the
+  // Postman-style API page. Deliberately on the folder rather than derived from
+  // `Doc.type` — a collection is a single published thing with one URL
+  // (/docs/:ws/:slug or /apis/:ws/:slug), so membership cannot depend on what
+  // happens to be inside it at the moment. Subfolders inherit their root's kind.
+  kind: { type: String, enum: ['DOCS', 'API'], default: 'DOCS' },
+  // Whether the collection is served on its public URL at all. Publishing is an
+  // explicit act: an API collection holds request headers, bodies and recorded
+  // examples that routinely carry credentials, and its public URL is derived
+  // from names anyone could guess (/apis/<workspace>/<folder-slug>). Defaults to
+  // false so nothing becomes readable by simply existing. Enforced for API
+  // collections in routes/public.js; DOCS folders are not gated yet, so their
+  // existing share links keep working.
+  published: { type: Boolean, default: false },
   order: Number,
   createdBy: String,
   description: String,
@@ -156,7 +209,10 @@ const folderSchema = new mongoose.Schema({
   environments: [{
     id: String,
     name: String,
-    baseUrl: String
+    baseUrl: String,
+    // Named `{{variables}}` substituted into an endpoint's URL, headers, params
+    // and body. `baseUrl` stays separate because it also joins relative URLs.
+    variables: [{ key: String, value: String }]
   }]
 }, { timestamps: true });
 folderSchema.set('toJSON', { virtuals: true });

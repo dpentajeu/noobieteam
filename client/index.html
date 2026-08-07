@@ -30,24 +30,78 @@
     <script src="https://unpkg.com/@babel/standalone@7.25.9/babel.min.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-    
+
+    <!-- Author HTML (Quill/Tiptap output) is rendered with dangerouslySetInnerHTML
+         on the public pages, same-origin with the session token in localStorage.
+         Everything that renders it goes through window.sanitizeHtml. -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+
     <script src="https://unpkg.com/lucide@0.477.0/dist/umd/lucide.js"></script>
     <script src="https://unpkg.com/react-beautiful-dnd@13.1.1/dist/react-beautiful-dnd.js"></script>
 
     <!-- Quill WYSIWYG (Synchronous & Stable) -->
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.bubble.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+    <!-- Tiptap powers the Docs editor (tables, images, Notion-style blocks).
+         It ships as ES modules only and this app has no bundler, so it is
+         imported from an ESM CDN inside a module script and handed to the
+         classic-script world through window.TipTap. Everything else on the page
+         is a plain script, hence the promise: components await it instead of
+         guessing when the module finished loading. -->
+    <script>
+      window.__tiptapReady = new Promise((resolve, reject) => {
+        window.__tiptapResolve = resolve;
+        window.__tiptapReject = reject;
+      });
+    </script>
+    <script type="module">
+      const V = '3.29.2';
+      try {
+        const [core, starter, list, table, image, extras] = await Promise.all([
+          import(`https://esm.sh/@tiptap/core@${V}`),
+          import(`https://esm.sh/@tiptap/starter-kit@${V}`),
+          import(`https://esm.sh/@tiptap/extension-list@${V}`),
+          import(`https://esm.sh/@tiptap/extension-table@${V}`),
+          import(`https://esm.sh/@tiptap/extension-image@${V}`),
+          import(`https://esm.sh/@tiptap/extensions@${V}`),
+        ]);
+        window.TipTap = {
+          Editor: core.Editor,
+          StarterKit: starter.default || starter.StarterKit,
+          TaskList: list.TaskList,
+          TaskItem: list.TaskItem,
+          Table: table.Table,
+          TableRow: table.TableRow,
+          TableCell: table.TableCell,
+          TableHeader: table.TableHeader,
+          Image: image.Image || image.default,
+          Placeholder: extras.Placeholder,
+        };
+        window.__tiptapResolve(window.TipTap);
+      } catch (err) {
+        console.error('Tiptap failed to load:', err);
+        window.__tiptapReject(err);
+      }
+    </script>
     <script src="https://unpkg.com/react-player@2.16.0/dist/ReactPlayer.js"></script>
     <script>
       window.ReactPlayer = window.ReactPlayer || window.reactPlayer;
     </script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #FAFAFA; color: #262626; }
+        /* Workspace tile gradient, written literally rather than with Tailwind's
+           gradient utilities. Those set --tw-gradient-from to a colour plus a
+           position, which any page-wide `@property { syntax: "<color>" }`
+           registration invalidates — Tailwind v4 registers exactly that, so a
+           browser extension bundling v4 was turning every tile transparent. */
+        .nt-tile-gradient { background-image: linear-gradient(to bottom right, #60a5fa, #6366f1); }
+
         .insta-shadow { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .story-ring { padding: 2px; border: 2px solid #DE005E; }
         .glass-blur { backdrop-filter: blur(20px); background: rgba(255, 255, 255, 0.9); }
         .animate-fade-in { animation: fadeIn 0.4s ease-out; }
         .animate-pop { animation: pop 0.3s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
@@ -81,11 +135,112 @@
         .readme-preview th, .readme-preview td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; }
         .readme-preview th { background: #f9fafb; font-weight: 700; }
 
-        .theme-default { background: #FFFFFF; color: #262626; border-bottom: 1px solid #f0f0f0; }
-        .theme-dark { background: #1A1A1A; color: #FFFFFF; border-bottom: 1px solid #333; }
-        .theme-dark-blue { background: #1E3A8A; color: #FFFFFF; border-bottom: 1px solid #1E40AF; }
-        .theme-green { background: #065F46; color: #FFFFFF; border-bottom: 1px solid #064E3B; }
-        .theme-ocean-blue { background: #0369A1; color: #FFFFFF; border-bottom: 1px solid #075985; }
+        /* NoobieDocs reading column. Tighter and more typographic than the generic
+           readme preview: this is the GitBook-style docs page, so headings carry the
+           hierarchy and code blocks get a copy affordance grafted on at runtime. */
+        .nd-doc-body { font-size: 14.5px; line-height: 1.7; color: #171719; padding: 0; }
+        .nd-doc-body h1 { font-size: 19px; font-weight: 800; letter-spacing: -0.01em; margin: 28px 0 10px; }
+        .nd-doc-body h2 { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; margin: 28px 0 10px; }
+        .nd-doc-body h3 { font-size: 14.5px; font-weight: 700; margin: 22px 0 8px; }
+        .nd-doc-body h1:first-child, .nd-doc-body h2:first-child, .nd-doc-body h3:first-child { margin-top: 0; }
+        .nd-doc-body p, .nd-doc-body li { color: #3A3A3D; }
+        .nd-doc-body p { margin: 0 0 14px; }
+        .nd-doc-body a { color: #0A84FF; text-decoration: none; }
+        .nd-doc-body a:hover { text-decoration: underline; }
+        .nd-doc-body code { font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12.5px; background: #EAF3FF; color: #0670DE; padding: 1px 5px; border-radius: 4px; }
+        /* A <code> inside a code block is the block's own text, not an inline pill. */
+        .nd-doc-body pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+        .nd-doc-body blockquote { border-left: 3px solid #0A84FF; background: #FAFAFA; color: #6E6E73; }
+
+        /* Notion-style Tiptap editor. No chrome of its own: the page is the
+           document, and the toolbars only appear over a selection or inside a
+           table. */
+        .nd-editor-content { outline: none; min-height: 420px; font-size: 14.5px; line-height: 1.7; color: #171719; }
+        .nd-editor-content > * + * { margin-top: 2px; }
+        .nd-editor-content h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 26px 0 8px; }
+        .nd-editor-content h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin: 22px 0 6px; }
+        .nd-editor-content h3 { font-size: 16.5px; font-weight: 700; margin: 18px 0 4px; }
+        .nd-editor-content p { margin: 0; padding: 3px 0; }
+        .nd-editor-content ul, .nd-editor-content ol { padding-left: 1.5rem; margin: 4px 0; }
+        .nd-editor-content li { margin: 2px 0; }
+        .nd-editor-content li p { padding: 0; }
+        .nd-editor-content blockquote { border-left: 3px solid #171719; padding-left: 14px; margin: 6px 0; color: #3A3A3D; }
+        .nd-editor-content pre { background: #141416; color: #E8E8EA; border-radius: 10px; padding: 14px 16px; margin: 12px 0; overflow-x: auto; font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 12.5px; }
+        .nd-editor-content pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+        .nd-editor-content code { font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; font-size: 12.5px; background: #EAF3FF; color: #0670DE; padding: 1px 5px; border-radius: 4px; }
+        .nd-editor-content hr { border: none; border-top: 1px solid #ECECEC; margin: 20px 0; }
+        .nd-editor-content a { color: #0A84FF; }
+        .nd-editor-content img { max-width: 100%; height: auto; border-radius: 10px; margin: 12px 0; display: block; }
+        .nd-editor-content .ProseMirror-selectednode { outline: 2px solid #0A84FF; outline-offset: 2px; border-radius: 10px; }
+        /* Tiptap's Placeholder extension only tags the node; the hint itself is drawn here. */
+        .nd-editor-content p.is-empty:first-child::before,
+        .nd-editor-content p.is-editor-empty:first-child::before {
+            content: attr(data-placeholder); float: left; height: 0; pointer-events: none; color: #C7C7CC;
+        }
+
+        /* Tables — editor and reading view share the same look. */
+        .nd-editor-content .tableWrapper, .nd-doc-body .tableWrapper { overflow-x: auto; margin: 14px 0; }
+        .nd-editor-content table, .nd-doc-body table { border-collapse: collapse; table-layout: fixed; width: 100%; margin: 14px 0; font-size: 13.5px; overflow: hidden; }
+        .nd-editor-content th, .nd-editor-content td, .nd-doc-body th, .nd-doc-body td {
+            border: 1px solid #ECECEC; padding: 7px 10px; vertical-align: top; position: relative; min-width: 60px;
+        }
+        .nd-editor-content th, .nd-doc-body th { background: #FAFAFA; font-weight: 700; text-align: left; }
+        .nd-editor-content .selectedCell::after {
+            content: ''; position: absolute; inset: 0; background: rgba(10, 132, 255, 0.12); pointer-events: none;
+        }
+        .nd-editor-content .column-resize-handle {
+            position: absolute; right: -2px; top: 0; bottom: 0; width: 4px; background: #0A84FF; cursor: col-resize;
+        }
+        .nd-editor .resize-cursor { cursor: col-resize; }
+
+        /* To-do lists. */
+        .nd-editor-content ul[data-type="taskList"], .nd-doc-body ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+        .nd-editor-content ul[data-type="taskList"] li, .nd-doc-body ul[data-type="taskList"] li { display: flex; gap: 8px; align-items: flex-start; }
+        .nd-editor-content ul[data-type="taskList"] li > label, .nd-doc-body ul[data-type="taskList"] li > label { margin-top: 4px; flex-shrink: 0; }
+        .nd-editor-content ul[data-type="taskList"] li > div, .nd-doc-body ul[data-type="taskList"] li > div { flex: 1; min-width: 0; }
+
+        .nd-doc-body hr { border: none; border-top: 1px solid #ECECEC; margin: 24px 0; }
+        .nd-doc-body img { max-width: 100%; height: auto; border-radius: 10px; margin: 14px 0; display: block; }
+        /* Saved HTML has no table wrapper of its own — window.enhanceDocContent
+           adds this one so a wide table scrolls instead of stretching the page. */
+        .nd-table-scroll { overflow-x: auto; margin: 14px 0; }
+        .nd-table-scroll > table { margin: 0; }
+        .nd-doc-body ul[data-type="taskList"] input[type="checkbox"] { accent-color: #0A84FF; }
+
+        .nd-code { position: relative; }
+        .nd-code pre { background: #141416 !important; color: #E8E8EA !important; border-radius: 10px; padding: 30px 16px 14px; margin: 14px 0 20px; overflow-x: auto; font-family: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12.5px; line-height: 1.6; white-space: pre; }
+        .nd-copy { position: absolute; top: 8px; right: 8px; background: #232326; border: 1px solid #34343A; border-radius: 6px; padding: 4px 9px; font-size: 11px; font-weight: 600; color: #C7C7CC; cursor: pointer; transition: background .15s ease, color .15s ease; }
+        .nd-copy:hover { background: #2C2C31; }
+        .nd-copy.is-copied { color: #18A957; border-color: #18A957; }
+
+        /* Header themes. Each class only declares the palette; the three consumer
+           classes below decide what to paint with it, so a new theme is one block
+           here plus one entry in window.THEMES — no per-component colour tables. */
+        /* `--hdr-bg-soft` is the same colour let down so the board wallpaper reads
+           through a stage. The dark themes hold a higher alpha than Default: at
+           0.55 over a white-washed page they turn grey instead of dark. */
+        .theme-default { --hdr-bg: #FFFFFF; --hdr-bg-soft: rgba(255,255,255,0.55); --hdr-fg: #262626; --hdr-border: #f0f0f0; }
+        .theme-dark { --hdr-bg: #1A1A1A; --hdr-bg-soft: rgba(26,26,26,0.72); --hdr-fg: #FFFFFF; --hdr-border: #333333; }
+        .theme-dark-blue { --hdr-bg: #1E3A8A; --hdr-bg-soft: rgba(30,58,138,0.72); --hdr-fg: #FFFFFF; --hdr-border: #1E40AF; }
+        .theme-green { --hdr-bg: #065F46; --hdr-bg-soft: rgba(6,95,70,0.72); --hdr-fg: #FFFFFF; --hdr-border: #064E3B; }
+        .theme-ocean-blue { --hdr-bg: #0369A1; --hdr-bg-soft: rgba(3,105,161,0.72); --hdr-fg: #FFFFFF; --hdr-border: #075985; }
+
+        /* The top bar. */
+        .theme-chrome { background: var(--hdr-bg); color: var(--hdr-fg); border-bottom: 1px solid var(--hdr-border); }
+        /* Board columns and anything else that has to sit in the same palette.
+           Fill only — the border colour is left to the utility class on the
+           element, so the two never race on equal specificity. */
+        .theme-surface { background: var(--hdr-bg); color: var(--hdr-fg); }
+        /* Translucent variant: stages let the board through, the task cards
+           inside stay opaque so nothing shows through the content itself.
+           No backdrop-filter here, deliberately. react-beautiful-dnd drags a
+           card as `position: fixed`, and a backdrop-filter ancestor becomes the
+           containing block for fixed descendants — the dragged card gets
+           re-anchored to its stage and trapped in that stacking context, so it
+           passes *under* the neighbouring stage instead of over it. */
+        .theme-surface-soft { background: var(--hdr-bg-soft); color: var(--hdr-fg); }
+        /* Colour chips in the theme picker: fill only, no chrome. */
+        .theme-swatch { background: var(--hdr-bg); }
 
         .jukebox-floating { position: fixed; z-index: 1000; left: 0; top: 0; }
         .jukebox-minimized { width: 56px; height: 56px; border-radius: 28px; overflow: hidden; }
@@ -96,7 +251,12 @@
 
         /* AI Assistant Styles */
         .ai-floating { position: fixed; z-index: 2000; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        .ai-floating-default { right: 20px; bottom: 25%; }
+        /* Right rail stacks up from the audio dock, which sits at bottom:20px and is
+           56px tall. Measured in pixels, not a viewport percentage: at 25% the chat
+           bubble floated mid-screen on a tall display, detached from the control it
+           belongs next to. The emoji button stacks 70px above this — see
+           WorkspaceView.jsx. */
+        .ai-floating-default { right: 20px; bottom: 90px; }
         .ai-floating-shifted { right: 20px; bottom: 45%; } /* Shift up when media player is maximized */
         
         .ai-minimized { width: 56px; height: 56px; border-radius: 28px; overflow: hidden; }
@@ -149,6 +309,11 @@
     <script type="text/babel" src="/src/components/UserManagement.jsx"></script>
     <script type="text/babel" src="/src/components/VaultTab.jsx"></script>
     <script type="text/babel" src="/src/components/DocTab.jsx?v=1780408200"></script>
+    <script type="text/babel" src="/src/components/NotionEditor.jsx?v=1780408200"></script>
+    <script type="text/babel" src="/src/components/DocsTab.jsx?v=1780408200"></script>
+    <script type="text/babel" src="/src/components/ApisTab.jsx?v=1780408200"></script>
+    <script type="text/babel" src="/src/components/PublicDocsView.jsx?v=1780408200"></script>
+    <script type="text/babel" src="/src/components/PublicApiView.jsx?v=1780408200"></script>
     <script type="text/babel" src="/src/components/CardModal.jsx"></script>
     <script type="text/babel" src="/src/components/ProfilePage.jsx"></script>
     <script type="text/babel" src="/src/components/ProfileMenu.jsx"></script>

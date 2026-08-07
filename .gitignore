@@ -6,6 +6,12 @@ deploy_port.txt
 *.png
 *.wt
 
+# Runtime user uploads (profile pictures, doc/task media) — see server/config.js MEDIA_ROOT
+uploads/
+
+# macOS
+.DS_Store
+
 mongodb_data/diagnostic.data/*
 mongodb_data/_tmp/*
 *.lock

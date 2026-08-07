@@ -98,13 +98,12 @@ To connect the application to your local MongoDB instance, you must configure th
 1. Open the `.env` file.
 2. Add the `MONGODB_URI` variable. The connection string follows the standard MongoDB format:
    `mongodb://[USER]:[PASSWORD]@[HOST]:[PORT]/[DATABASE_NAME]?authSource=admin`
-3. Ensure your `ADMIN_EMAIL` is also correctly set for RBAC.
+3. RBAC needs no env var. After signing up, promote your account once with
+   `node server/scripts/seedSuperadmin.js you@example.com` — `systemRole` is
+   stored on the user document and read from there on every request.
 
 ### Example `.env` File:
 ```env
-# --- Admin & RBAC ---
-ADMIN_EMAIL=admin@noobieteam.ai
-
 # --- Application Settings ---
 PORT=9743
 

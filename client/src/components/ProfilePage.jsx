@@ -8,10 +8,9 @@ window.ProfilePage = ({ user, onBack, onUpdateUser, theme }) => {
     const [saving, setSaving] = React.useState('');
     const avatarInputRef = React.useRef(null);
     const backgroundInputRef = React.useRef(null);
-    const headerClass = window.THEMES.find(t => t.id === theme)?.class || 'theme-default';
-    const isDarkHeader = ['dark', 'darkblue', 'green', 'ocean'].includes(theme);
+    const hdr = window.getHeaderTheme(theme);
     const email = user?.email || '';
-    const label = window.getInitials(email);
+    const label = window.getInitials(user || email);
 
     const persistUser = async (patch, successMessage) => {
         let updatedUser = { ...user, ...patch };
@@ -34,44 +33,55 @@ window.ProfilePage = ({ user, onBack, onUpdateUser, theme }) => {
         showToast(successMessage);
     };
 
-    const readImage = (file, callback) => {
+    // `category` picks the folder under <repo>/uploads/. It is sent in the query
+    // string as well as the body because multer only exposes multipart fields
+    // that arrive before the file part.
+    const uploadMedia = async (file, category) => {
+        const formData = new FormData();
+        formData.append('category', category);
+        formData.append('file', file);
+        const res = await fetch(`/api/upload?category=${encodeURIComponent(category)}`, {
+            method: 'POST',
+            body: formData,
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(data?.error || 'Upload failed.');
+        return data.path;
+    };
+
+    const handleAvatarUpload = async (event) => {
+        const file = event.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => callback(event.target.result);
-        reader.readAsDataURL(file);
+        setSaving('avatar');
+        try {
+            const avatar = await uploadMedia(file, 'profile_picture');
+            await persistUser({ avatar }, t('alerts.profile_picture_updated') || 'Profile picture updated.');
+        } catch (err) {
+            showToast(err.message);
+        } finally {
+            setSaving('');
+            event.target.value = '';
+        }
     };
 
-    const handleAvatarUpload = (event) => {
-        readImage(event.target.files?.[0], async (avatar) => {
-            setSaving('avatar');
-            try {
-                await persistUser({ avatar }, t('alerts.profile_picture_updated') || 'Profile picture updated.');
-            } catch (err) {
-                showToast(err.message);
-            } finally {
-                setSaving('');
-                event.target.value = '';
-            }
-        });
-    };
-
-    const handleBackgroundUpload = (event) => {
-        readImage(event.target.files?.[0], async (homeBackgroundImage) => {
-            setSaving('background');
-            try {
-                await persistUser({ homeBackgroundImage }, t('alerts.home_background_updated') || 'Home background image updated.');
-            } catch (err) {
-                showToast(err.message);
-            } finally {
-                setSaving('');
-                event.target.value = '';
-            }
-        });
+    const handleBackgroundUpload = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        setSaving('background');
+        try {
+            const homeBackgroundImage = await uploadMedia(file, 'background');
+            await persistUser({ homeBackgroundImage }, t('alerts.home_background_updated') || 'Home background image updated.');
+        } catch (err) {
+            showToast(err.message);
+        } finally {
+            setSaving('');
+            event.target.value = '';
+        }
     };
 
     const handlePasswordSave = async () => {
         if (!currentPassword) return showToast(t('alerts.current_password_required') || 'Current password is required');
-        if (password.length < 4) return showToast(t('alerts.password_too_short') || 'Password too short');
+        if (!window.checkPasswordRules(password).valid) return showToast(t('alerts.weak_security') || 'Password must be at least 8 characters and include a symbol.');
         setSaving('password');
         try {
             const res = await fetch(`/api/users/${encodeURIComponent(email)}/password`, {
@@ -80,7 +90,7 @@ window.ProfilePage = ({ user, onBack, onUpdateUser, theme }) => {
                 body: JSON.stringify({ currentPassword, password })
             });
             const data = await res.json().catch(() => null);
-            if (!res.ok) throw new Error(data?.error || 'Unable to update password.');
+            if (!res.ok) throw new Error(data?.errors?.[0]?.message || data?.error || 'Unable to update password.');
             setCurrentPassword('');
             setPassword('');
             showToast(t('alerts.password_updated') || 'Password updated successfully.');
@@ -129,12 +139,12 @@ window.ProfilePage = ({ user, onBack, onUpdateUser, theme }) => {
 
     return (
         <div className="h-screen bg-gray-50 text-black flex flex-col animate-fade-in overflow-hidden">
-            <nav className={`h-16 px-6 lg:px-12 flex items-center justify-between flex-shrink-0 transition-colors duration-500 shadow-sm ${headerClass}`}>
+            <nav className={`h-16 px-6 lg:px-12 flex items-center justify-between flex-shrink-0 transition-colors duration-300 shadow-sm ${hdr.nav}`}>
                 <div className="flex items-center gap-4 min-w-0">
-                    <button onClick={onBack} className={`p-2.5 hover:bg-black/5 rounded-xl transition ${isDarkHeader ? 'text-white' : 'text-black'}`} title={t('actions.back') || 'Back'}>
+                    <button type="button" onClick={onBack} className={`p-2.5 rounded-xl transition ${hdr.ghost}`} title={t('actions.back') || 'Back'}>
                         <window.Icon name="arrow-left" size={20} />
                     </button>
-                    <div className={isDarkHeader ? 'text-white' : 'text-black'}>
+                    <div className={hdr.title}>
                         <h1 className="text-lg font-black tracking-tighter italic">{t('labels.profile_settings') || 'Profile Settings'}</h1>
                         <p className="text-[9px] font-black uppercase tracking-[0.25em] opacity-50 truncate max-w-[60vw]">{email}</p>
                     </div>
@@ -146,7 +156,7 @@ window.ProfilePage = ({ user, onBack, onUpdateUser, theme }) => {
                     <section className="bg-white border border-gray-100 rounded-2xl p-5 md:p-8 shadow-sm">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="flex items-center gap-4 min-w-0">
-                                <window.Avatar label={label} src={user?.avatar} size="lg" />
+                                <window.Avatar label={label} src={window.getImageUrl(user?.avatar)} size="lg" />
                                 <div className="min-w-0">
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('labels.authorized_user') || 'Authorized User'}</p>
                                     <h2 className="text-2xl font-black tracking-tight truncate">{user?.name || email.split('@')[0]}</h2>
@@ -167,7 +177,7 @@ window.ProfilePage = ({ user, onBack, onUpdateUser, theme }) => {
                                 <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center"><window.Icon name="key-round" size={18} /></div>
                                 <div>
                                     <h3 className="text-sm font-black uppercase tracking-widest">{t('actions.update_password') || 'Update Password'}</h3>
-                                    <p className="text-xs text-gray-400">{t('labels.enter_secure_key') || 'Enter a secure key.'}</p>
+                                    <p className="text-xs text-gray-400">{t('labels.password_policy') || 'At least 8 characters, including one symbol.'}</p>
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2">
@@ -221,7 +231,7 @@ window.ProfilePage = ({ user, onBack, onUpdateUser, theme }) => {
                         </div>
                         {user?.homeBackgroundImage && (
                             <div className="mt-5 aspect-[16/5] rounded-2xl overflow-hidden border border-gray-100 bg-gray-50">
-                                <img src={user.homeBackgroundImage} className="w-full h-full object-cover" />
+                                <img src={window.getImageUrl(user.homeBackgroundImage)} className="w-full h-full object-cover" />
                             </div>
                         )}
                     </section>

@@ -1,7 +1,13 @@
 window.GlobalModal = ({ isOpen, onClose, title, children, footer }) => {
+    // Must run before the early return — hooks cannot be called conditionally.
+    // `isOpen` gates registration so a closed modal is not on the Escape stack.
+    window.useEscapeKey(onClose, isOpen);
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 z-[4000] flex items-center justify-center p-4 glass-blur animate-fade-in text-black">
+        <div
+            className="fixed inset-0 z-[4000] flex items-center justify-center p-4 glass-blur animate-fade-in text-black"
+            onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}
+        >
             <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden animate-pop">
                 <div className="p-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
                     <h3 className="text-lg font-black text-black tracking-tight">{title}</h3>
