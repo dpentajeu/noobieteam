@@ -506,13 +506,24 @@ window.DocTab = ({ workspaceId, user, onLogActivity }) => {
     const activeDoc = selectedDocId ? docs.find(d => (d.id === selectedDocId || d._id === selectedDocId)) : null;
     const activeFolder = selectedFolderId && !selectedDocId ? folders.find(f => (f.id === selectedFolderId || f._id === selectedFolderId)) : null;
     
-    // Recursive helper to get the root folder to inherit environments
+    // Walk up to the root folder, whose environments the whole tree inherits.
+    // Iterative with a seen-set: `parentId` is writable through the API, so a
+    // chain that loops (A -> B -> A) is representable, and recursing through one
+    // overflows the stack and blanks the tab.
     const getRootFolder = (fId) => {
         if (!fId) return null;
-        const f = folders.find(x => x.id === fId || x._id === fId);
-        if (!f) return null;
-        if (!f.parentId) return f;
-        return getRootFolder(f.parentId);
+        let current = folders.find(x => x.id === fId || x._id === fId);
+        if (!current) return null;
+        const idOfFolder = (f) => f.id || f._id;
+        const seen = new Set([idOfFolder(current)]);
+        while (current.parentId) {
+            const parent = folders.find(x => x.id === current.parentId || x._id === current.parentId);
+            if (!parent) return null;
+            if (seen.has(idOfFolder(parent))) return current;
+            seen.add(idOfFolder(parent));
+            current = parent;
+        }
+        return current;
     };
     const isAnySelected = selectedDocIds && selectedDocIds.size > 0;
 

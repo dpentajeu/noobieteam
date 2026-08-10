@@ -131,9 +131,10 @@ window.VaultTab = function({ workspace, user, onUpdate, onUpdateUser, onLogActiv
         });
     };
 
-    const copyToClipboard = (text) => {
-        navigator.clipboard.writeText(text);
-        showToast(t('alerts.copied_to_clipboard'));
+    const copyToClipboard = async (text) => {
+        const ok = await window.copyText(text);
+        if (ok) showToast(t('alerts.copied_to_clipboard'));
+        else showToast(t('alerts.copy_failed') || 'Unable to copy.', 'error');
     };
 
     return (

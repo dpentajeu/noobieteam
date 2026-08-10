@@ -95,9 +95,11 @@ GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID_HERE
 GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET_HERE
 
 # Super Admin Role
-# The user with this exact email is granted Super Admin privileges.
-# They bypass all workspace invitation checks and can delete workspaces.
-ADMIN_EMAIL=YOUR_ADMIN_EMAIL_HERE
+# Not an env var. SUPERADMIN is stored on the user record in the database.
+# Sign up normally, then promote that account once:
+#   node server/scripts/seedSuperadmin.js you@example.com
+# Superadmins govern accounts (ban, role, delete, PIN reset). They get no access
+# to workspace content — add them as a workspace member if they need in.
 
 # --- AI Assistant (Multi-Model Support) ---
 DEFAULT_AI_PROVIDER=gemini # Options: openai, gemini, qwen, kimi
@@ -118,7 +120,44 @@ QWEN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 # Kimi Configuration
 KIMI_API_KEY=YOUR_KIMI_API_KEY_HERE
 KIMI_BASE_URL=https://api.moonshot.cn/v1
+
+# --- Media Storage ---
+# Where uploaded avatars, backgrounds and attachments are stored.
+#   local -> this server's own disk (no cloud account needed)
+#   oss   -> Alibaba Cloud OSS bucket
+# If unset, defaults to "oss" when OSS_BUCKET is set, otherwise "local".
+STORAGE_DRIVER=local
+
+# Local driver only
+LOCAL_STORAGE_DIR=storage           # relative paths resolve from the repo root
+LOCAL_STORAGE_BASE_URL=             # set only if a CDN/proxy fronts the upload dir
+MAX_UPLOAD_BYTES=26214400           # 25MB
+
+# OSS driver only (required when STORAGE_DRIVER=oss)
+OSS_ENDPOINT=oss-ap-southeast-1.aliyuncs.com
+OSS_ACCESS_KEY_ID=YOUR_OSS_ACCESS_KEY_ID_HERE
+OSS_ACCESS_KEY_SECRET=YOUR_OSS_ACCESS_KEY_SECRET_HERE
+OSS_BUCKET=YOUR_OSS_BUCKET_HERE
+OSS_DOMAIN=https://YOUR_BUCKET.oss-ap-southeast-1.aliyuncs.com
 ```
+
+#### Choosing a storage backend
+
+| | `local` | `oss` |
+|---|---|---|
+| Setup | none — works out of the box | needs an Alibaba Cloud bucket + keys |
+| Files live in | `LOCAL_STORAGE_DIR` on the app server | the OSS bucket |
+| Served by | this server, at `/uploads/...` | the bucket domain |
+| Best for | air-gapped / on-premise installs, dev | multi-instance or CDN-backed deploys |
+
+Switching drivers changes where **new** uploads go; files already stored under the old
+driver are not migrated. On `local`, back up `LOCAL_STORAGE_DIR` alongside the database,
+and mount it on shared or persistent disk if you run more than one app instance or deploy
+in a container (a container's local filesystem is wiped on redeploy).
+
+Uploaded files are served without authentication under `/uploads/`, matching how a
+public OSS bucket behaves. Anyone with the URL can read them; the filename is random,
+not secret.
 
 ### 4. Start the Application
 Start both the backend server and the frontend client concurrently:

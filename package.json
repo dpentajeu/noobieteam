@@ -4,7 +4,10 @@
   "description": "Noobieteam project",
   "main": "server/index.js",
   "scripts": {
-    "start": "node server/index.js"
+    "devStart": "nodemon --watch server server/index.js",
+    "start": "node server/index.js",
+    "deploy": "wrangler deploy",
+    "preview": "wrangler dev"
   },
   "dependencies": {
     "@babel/core": "^7.29.0",
@@ -13,14 +16,19 @@
     "crypto-js": "^4.2.0",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-validator": "^7.3.2",
     "google-auth-library": "^10.6.2",
+    "jsonwebtoken": "^9.0.3",
     "mongodb-memory-server": "^11.0.1",
     "mongoose": "^9.6.1",
+    "multer": "^2.2.0",
     "react-player": "^2.16.0",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
-    "vite-plugin-node-polyfills": "^0.26.0"
+    "nodemon": "^3.1.14",
+    "vite-plugin-node-polyfills": "^0.26.0",
+    "wrangler": "^4.115.0"
   }
 }
